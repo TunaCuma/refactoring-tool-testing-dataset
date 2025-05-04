@@ -6,8 +6,8 @@ import java.util.*;
 class MetricsCalculatorTest {
     @Test
     void testCalculateMetrics() {
-        var v1 = Map.of("bounce", true, "conversion", false);
-        var v2 = Map.of("bounce", false, "conversion", true);
+        var v1 = Map.of("bounce", (Object)true, "conversion", (Object)false);
+        var v2 = Map.of("bounce", (Object)false, "conversion", (Object)true);
         var metrics = new MetricsCalculator().calculateAllMetrics(List.of(v1, v2));
         assertEquals(2.0, metrics.get("sessions"));
         assertEquals(0.5, metrics.get("bounceRate"));

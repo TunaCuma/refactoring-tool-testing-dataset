@@ -1,5 +1,8 @@
 package org.example.long_method.hard;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class EmailTemplateEngine {
     /**
      * Loads template, replaces placeholders, processes conditional sections,
@@ -17,11 +20,18 @@ public class EmailTemplateEngine {
             tpl = tpl.replace("{{" + entry.getKey() + "}}", String.valueOf(entry.getValue()));
         }
         // conditionals: {{#if key}}...{{/if}}
-        tpl = tpl.replaceAll("\{\#if (\w+)\}(.*?)\{\/if\}", m -> {
-            String key = m.group(1);
-            String body = m.group(2);
-            return Boolean.TRUE.equals(context.get(key)) ? body : "";
-        });
+        Pattern pattern = Pattern.compile("\\{\\{#if (\\w+)\\}(.*?)\\{/if\\}");
+        Matcher matcher = pattern.matcher(tpl);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            String key = matcher.group(1);
+            String body = matcher.group(2);
+            String replacement = Boolean.TRUE.equals(context.get(key)) ? body : "";
+            matcher.appendReplacement(sb, replacement);
+        }
+        matcher.appendTail(sb);
+        tpl = sb.toString();
+        
         // inline CSS stub
         tpl = tpl.replaceAll("<link rel=\"stylesheet\" href=\"(.*?)\" />", "");
         // return

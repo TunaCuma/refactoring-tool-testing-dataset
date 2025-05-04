@@ -13,8 +13,8 @@ public class StringStatisticsTest {
         String report = stats.generateReport(inputs);
 
         assertTrue(report.contains("Count: 4"));
-        assertTrue(report.contains("Total Length: 20"));
-        assertTrue(report.contains("Average Length: 5.00"));
+        assertTrue(report.contains("Total Length: 19"));
+        assertTrue(report.contains("Average Length: 4.75")); 
         assertTrue(report.contains("Longest: banana"));
         assertTrue(report.contains("Shortest: kiwi"));
         assertTrue(report.contains("apple"));

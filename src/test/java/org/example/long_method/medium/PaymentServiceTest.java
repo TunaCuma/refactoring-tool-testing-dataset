@@ -11,7 +11,7 @@ class PaymentServiceTest {
     }
     @Test
     void testInsufficientFunds() {
-        assertEquals("Insufficient funds.", new PaymentService().processPayment("4123", 2000.0, null));
+        assertEquals("Insufficient funds.", new PaymentService().processPayment("4123456789012345", 2000.0, null));
     }
     @Test
     void testInvalidCard() {

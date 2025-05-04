@@ -30,13 +30,19 @@ public class DataExporter {
         // 4. Build output
         StringBuilder sb = new StringBuilder();
         if ("CSV".equalsIgnoreCase(format)) {
+            java.util.Set<String> keys = new java.util.LinkedHashSet<>();
+            for (var rec : filtered) {
+                keys.addAll(rec.keySet());
+            }
+            var sortedKeys = new java.util.ArrayList<>(keys);
+            java.util.Collections.sort(sortedKeys);
+            
             // header
-            var keys = filtered.get(0).keySet();
-            sb.append(String.join(",", keys)).append("\n");
+            sb.append(String.join(",", sortedKeys)).append("\n");
             // rows
             for (var rec : filtered) {
                 java.util.List<String> row = new java.util.ArrayList<>();
-                for (var k : keys) row.add(String.valueOf(rec.get(k)));
+                for (var k : sortedKeys) row.add(String.valueOf(rec.get(k)));
                 sb.append(String.join(",", row)).append("\n");
             }
         } else {

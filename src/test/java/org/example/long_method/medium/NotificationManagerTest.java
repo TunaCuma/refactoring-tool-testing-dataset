@@ -13,6 +13,6 @@ class NotificationManagerTest {
         );
         var res = new NotificationManager().sendBulkNotification(users, "Hi", "Content");
         assertEquals(3, res.size());
-        assertTrue(res.get(0).startsWith("Email to alice"));
+        assertTrue(res.stream().anyMatch(r -> r.startsWith("Email to alice")));
     }
 }

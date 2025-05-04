@@ -11,8 +11,7 @@ public class DocumentConverter {
             byte[] data = java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(docxPath));
             String text = new String(data); // fake extraction
             // convert headings
-            String md = text.replaceAll("<h(\d)>(.*?)</h\1>", "#$1 $2
-");
+            String md = text.replaceAll("<h(\\d)>(.*?)</h\\1>", "#$1 $2\n");
             // images
             md = md.replaceAll("<img src=\"(.*?)\" />", "![]($1)");
             java.nio.file.Files.writeString(java.nio.file.Paths.get(mdPath), md);

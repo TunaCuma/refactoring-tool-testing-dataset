@@ -4,8 +4,9 @@ public class UserManager {
     /**
      * Registers and authenticates users in-memory, returns status.
      */
+    private java.util.Map<String,String> db = new java.util.HashMap<>();
+
     public String handleUser(String action, String username, String password) {
-        java.util.Map<String,String> db = new java.util.HashMap<>();
         StringBuilder sb = new StringBuilder();
         // 1. Register
         if ("register".equalsIgnoreCase(action)) {

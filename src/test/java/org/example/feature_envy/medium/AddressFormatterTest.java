@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class AddressFormatterTest {
     @Test
     void testFormatValid() {
-        Customer c = new Customer("123 Main St", "Springfield", "12345", "USA");
+        CustomerA c = new CustomerA("123 Main St", "Springfield", "12345", "USA");
         assertEquals("123 Main St, Springfield 12345, USA", new AddressFormatter().format(c));
     }
     @Test

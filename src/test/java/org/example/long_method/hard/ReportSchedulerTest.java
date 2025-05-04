@@ -6,7 +6,7 @@ import java.util.*;
 class ReportSchedulerTest {
     @Test
     void testSchedule() {
-        var job = Map.of("name","R1","cron","0 0 * * *");
+        var job = new HashMap<String,Object>(Map.of("name","R1","cron","0 0 * * *"));
         String out = new ReportScheduler().schedule(List.of(job));
         assertTrue(out.contains("Ran:R1@0 0 * * *"));
     }

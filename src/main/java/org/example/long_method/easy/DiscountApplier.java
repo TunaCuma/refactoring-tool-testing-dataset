@@ -10,11 +10,10 @@ public class DiscountApplier {
             discount = amount * 0.2;
         } else if (amount > 500) {
             discount = amount * 0.1;
-        } else if (amount > 100) {
+        } else if (amount >= 100) {
             discount = amount * 0.05;
         }
         double total = amount - discount;
-        // apply membership fee
         if (amount > 200) {
             total -= 10;
         }

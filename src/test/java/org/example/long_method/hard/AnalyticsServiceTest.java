@@ -4,9 +4,11 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import java.nio.file.*;
 import java.util.*;
+import org.junit.jupiter.api.io.TempDir;
+
 class AnalyticsServiceTest {
     @Test
-    void testRunAnalytics(tmpdir: Path) throws Exception {
+    void testRunAnalytics(@TempDir Path tmpdir) throws Exception {
         Path f = tmpdir.resolve("data.csv");
         Files.writeString(f, "1,10.5,1000\n2,5.0,2000\n3,-1,3000\n4,abc,4000\n");
         Map<Integer,String> ref = Map.of(1,"A",2,"B");

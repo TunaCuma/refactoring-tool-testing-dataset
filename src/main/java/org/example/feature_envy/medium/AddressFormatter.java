@@ -4,7 +4,7 @@ public class AddressFormatter {
     /**
      * Formats a customer's address into a single string.
      */
-    public String format(Customer customer) {
+    public String format(CustomerA customer) {
         if (customer == null) return "";
         return customer.getStreet() + ", " +
                customer.getCity() + " " +
@@ -13,9 +13,9 @@ public class AddressFormatter {
     }
 }
 
-class Customer {
+class CustomerA {
     private final String street, city, postalCode, country;
-    public Customer(String street, String city, String postalCode, String country) {
+    public CustomerA(String street, String city, String postalCode, String country) {
         this.street = street; this.city = city;
         this.postalCode = postalCode; this.country = country;
     }

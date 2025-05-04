@@ -6,7 +6,7 @@ import java.util.*;
 class AuditTrailServiceTest {
     @Test
     void testAudit() {
-        var act = Map.of("user","u1","time",123L,"event","E");
+        var act = new HashMap<String,Object>(Map.of("user","u1","time",123L,"event","E"));
         var users = Map.of("u1","Alice");
         int count = new AuditTrailService().audit(List.of(act), users);
         assertEquals(1, count);

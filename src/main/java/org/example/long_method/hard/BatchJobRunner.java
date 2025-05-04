@@ -40,13 +40,10 @@ public class BatchJobRunner {
         }
         // summarize
         StringBuilder sb = new StringBuilder();
-        sb.append("Jobs Processed: ").append(jobFiles.size()).append("
-");
-        sb.append("Failures: ").append(failures.size()).append("
-");
+        sb.append("Jobs Processed: ").append(jobFiles.size()).append("\n");
+        sb.append("Failures: ").append(failures.size()).append("\n");
         for (var e : failures.entrySet()) {
-            sb.append(e.getKey()).append("->").append(e.getValue()).append("
-");
+            sb.append(e.getKey()).append("->").append(e.getValue()).append("\n");
         }
         // return logs
         return sb.toString();
