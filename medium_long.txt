@@ -1,0 +1,583 @@
+// File: DataExporter.java
+public class DataExporter {
+    /**
+     * Reads records, filters, transforms, and exports to CSV or JSON.
+     */
+    public String exportData(java.util.List<java.util.Map<String,Object>> records, String format) {
+        // 1. Validate inputs
+        if (records == null || records.isEmpty()) {
+            return "No data to export.";
+        }
+        if (!"CSV".equalsIgnoreCase(format) && !"JSON".equalsIgnoreCase(format)) {
+            throw new IllegalArgumentException("Unsupported format: " + format);
+        }
+        // 2. Filter out inactive
+        java.util.List<java.util.Map<String,Object>> filtered = new java.util.ArrayList<>();
+        for (var rec : records) {
+            Object active = rec.get("active");
+            if (Boolean.TRUE.equals(active)) {
+                filtered.add(rec);
+            }
+        }
+        // 3. Transform values
+        for (var rec : filtered) {
+            if (rec.containsKey("timestamp")) {
+                long ts = (Long)rec.get("timestamp");
+                rec.put("date", new java.text.SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date(ts)));
+            }
+        }
+        // 4. Build output
+        StringBuilder sb = new StringBuilder();
+        if ("CSV".equalsIgnoreCase(format)) {
+            // header
+            var keys = filtered.get(0).keySet();
+            sb.append(String.join(",", keys)).append("\n");
+            // rows
+            for (var rec : filtered) {
+                java.util.List<String> row = new java.util.ArrayList<>();
+                for (var k : keys) row.add(String.valueOf(rec.get(k)));
+                sb.append(String.join(",", row)).append("\n");
+            }
+        } else {
+            // JSON array
+            sb.append("[");
+            for (int i = 0; i < filtered.size(); i++) {
+                sb.append(new com.google.gson.Gson().toJson(filtered.get(i)));
+                if (i < filtered.size() - 1) sb.append(",");
+            }
+            sb.append("]");
+        }
+        return sb.toString();
+    }
+}
+
+// File: DataExporterTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+class DataExporterTest {
+    @Test
+    void testExportCsv() {
+        Map<String,Object> r1 = Map.of("active", true, "timestamp", 0L, "value", 10);
+        String csv = new DataExporter().exportData(List.of(r1), "CSV");
+        assertTrue(csv.startsWith("active,timestamp,value,date"));
+        assertTrue(csv.contains("true,0,10,1970-01-01"));
+    }
+    @Test
+    void testExportJson() {
+        Map<String,Object> r1 = Map.of("active", true, "timestamp", 1000L);
+        String json = new DataExporter().exportData(List.of(r1), "JSON");
+        assertTrue(json.startsWith("["));
+        assertTrue(json.contains("\"active\":true"));
+    }
+    @Test
+    void testEmptyRecords() {
+        assertEquals("No data to export.", new DataExporter().exportData(Collections.emptyList(), "CSV"));
+    }
+}
+
+// File: PaymentService.java
+public class PaymentService {
+    /**
+     * Validates payment, authorizes, captures funds, and sends receipt.
+     */
+    public String processPayment(String cardNumber, double amount, String receiptEmail) {
+        // 1. Validate inputs
+        if (cardNumber == null || cardNumber.length() < 12) {
+            throw new IllegalArgumentException("Invalid card number");
+        }
+        if (amount <= 0) {
+            return "No amount to process.";
+        }
+        // 2. Check balance (stubbed)
+        double balance = 1000.0;
+        if (amount > balance) {
+            return "Insufficient funds.";
+        }
+        // 3. Authorize
+        boolean auth = cardNumber.startsWith("4");
+        if (!auth) {
+            return "Authorization failed.";
+        }
+        // 4. Capture
+        String transactionId = "TXN" + System.currentTimeMillis();
+        // 5. Send receipt
+        StringBuilder sb = new StringBuilder();
+        sb.append("Transaction: ").append(transactionId).append("\n");
+        sb.append("Amount: $").append(amount).append("\n");
+        if (receiptEmail != null && receiptEmail.contains("@")) {
+            sb.append("Receipt sent to: ").append(receiptEmail);
+        } else {
+            sb.append("No receipt email provided.");
+        }
+        return sb.toString();
+    }
+}
+
+// File: PaymentServiceTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class PaymentServiceTest {
+    @Test
+    void testValidVisaPayment() {
+        String res = new PaymentService().processPayment("4123456789012", 100.0, "a@b.com");
+        assertTrue(res.contains("Transaction:"));
+        assertTrue(res.contains("Receipt sent to: a@b.com"));
+    }
+    @Test
+    void testInsufficientFunds() {
+        assertEquals("Insufficient funds.", new PaymentService().processPayment("4123", 2000.0, null));
+    }
+    @Test
+    void testInvalidCard() {
+        assertThrows(IllegalArgumentException.class, () -> new PaymentService().processPayment(null, 50.0, null));
+    }
+}
+
+// File: FileProcessor.java
+public class FileProcessor {
+    /**
+     * Opens file, parses lines, applies rules, summarizes, and archives.
+     */
+    public String processFile(String path) {
+        // 1. Read
+        java.util.List<String> lines;
+        try {
+            lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get(path));
+        } catch (Exception e) {
+            return "Error reading file.";
+        }
+        if (lines.isEmpty()) {
+            return "Empty file.";
+        }
+        // 2. Parse and filter
+        java.util.List<String> data = new java.util.ArrayList<>();
+        for (String line : lines) {
+            if (line.startsWith("#")) continue;
+            data.add(line.trim());
+        }
+        // 3. Transform
+        java.util.Map<String,Integer> freq = new java.util.HashMap<>();
+        for (String d : data) {
+            freq.put(d, freq.getOrDefault(d, 0) + 1);
+        }
+        // 4. Summarize
+        StringBuilder sb = new StringBuilder();
+        sb.append("Summary:\n");
+        for (var e : freq.entrySet()) {
+            sb.append(e.getKey()).append("->").append(e.getValue()).append("\n");
+        }
+        // 5. Archive
+        try {
+            java.nio.file.Files.write(java.nio.file.Paths.get(path + ".bak"), lines);
+        } catch (Exception ignored) {}
+        return sb.toString();
+    }
+}
+
+// File: FileProcessorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.nio.file.*;
+class FileProcessorTest {
+    @Test
+    void testProcessFile(tmpdir: Path) throws Exception {
+        Path file = tmpdir.resolve("test.txt");
+        Files.writeString(file, "#comment\na\nb\na\n");
+        String out = new FileProcessor().processFile(file.toString());
+        assertTrue(out.contains("a->2"));
+        assertTrue(Files.exists(tmpdir.resolve("test.txt.bak")));
+    }
+    @Test
+    void testMissingFile() {
+        assertEquals("Error reading file.", new FileProcessor().processFile("nope.txt"));
+    }
+}
+
+// File: NotificationManager.java
+public class NotificationManager {
+    /**
+     * Builds recipient list, composes messages via email/SMS/push, and logs results.
+     */
+    public java.util.List<String> sendBulkNotification(java.util.Map<String,String> users, String subject, String body) {
+        java.util.List<String> results = new java.util.ArrayList<>();
+        for (var entry : users.entrySet()) {
+            String user = entry.getKey();
+            String channel = entry.getValue();
+            String res;
+            if ("email".equalsIgnoreCase(channel)) {
+                res = "Email to " + user + ": " + subject + " - " + body;
+            } else if ("sms".equalsIgnoreCase(channel)) {
+                res = "SMS to " + user + ": " + body;
+            } else if ("push".equalsIgnoreCase(channel)) {
+                res = "Push to " + user + ": " + subject;
+            } else {
+                res = "Unknown channel for " + user;
+            }
+            // simulate logging
+            System.out.println("Sent: " + res);
+            results.add(res);
+        }
+        return results;
+    }
+}
+
+// File: NotificationManagerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+class NotificationManagerTest {
+    @Test
+    void testSendMixed() {
+        Map<String,String> users = Map.of(
+            "alice", "email",
+            "bob", "sms",
+            "eve", "push"
+        );
+        var res = new NotificationManager().sendBulkNotification(users, "Hi", "Content");
+        assertEquals(3, res.size());
+        assertTrue(res.get(0).startsWith("Email to alice"));
+    }
+}
+
+// File: OrderFulfillment.java
+public class OrderFulfillment {
+    /**
+     * Checks inventory, reserves items, calculates shipping, packages, and updates status.
+     */
+    public String fulfillOrder(String orderId, java.util.Map<String,Integer> inventory, java.util.Map<String,Integer> order) {
+        // 1. Validate
+        if (orderId == null || orderId.isEmpty()) return "Invalid order ID.";
+        if (order == null || order.isEmpty()) return "Nothing to fulfill.";
+        // 2. Check inventory
+        for (var item : order.entrySet()) {
+            int have = inventory.getOrDefault(item.getKey(), 0);
+            if (have < item.getValue()) {
+                return "Out of stock: " + item.getKey();
+            }
+        }
+        // 3. Reserve
+        for (var item : order.entrySet()) {
+            inventory.put(item.getKey(), inventory.get(item.getKey()) - item.getValue());
+        }
+        // 4. Calculate shipping
+        double weight = order.values().stream().mapToInt(i -> i).sum() * 0.5;
+        double cost = weight * 2.0;
+        // 5. Package
+        String packageId = "PKG" + orderId;
+        // 6. Update status
+        return String.format("Order %s fulfilled, shipping=%.2f, package=%s", orderId, cost, packageId);
+    }
+}
+
+// File: OrderFulfillmentTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+class OrderFulfillmentTest {
+    @Test
+    void testSuccessfulFulfill() {
+        Map<String,Integer> inv = new HashMap<>(Map.of("item1", 10));
+        Map<String,Integer> ord = Map.of("item1", 2);
+        String res = new OrderFulfillment().fulfillOrder("123", inv, ord);
+        assertTrue(res.contains("fulfilled"));
+        assertEquals(8, inv.get("item1"));
+    }
+    @Test
+    void testOutOfStock() {
+        Map<String,Integer> inv = Map.of("item1", 1);
+        Map<String,Integer> ord = Map.of("item1", 2);
+        assertTrue(new OrderFulfillment().fulfillOrder("123", inv, ord).startsWith("Out of stock"));
+    }
+}
+
+// File: MetricsCalculator.java
+public class MetricsCalculator {
+    /**
+     * Calculates multiple site metrics: sessions, bounce rate, conversion, etc.
+     */
+    public java.util.Map<String, Double> calculateAllMetrics(java.util.List<java.util.Map<String, Object>> visits) {
+        java.util.Map<String, Double> metrics = new java.util.HashMap<>();
+        if (visits == null || visits.isEmpty()) {
+            return metrics;
+        }
+        int sessions = visits.size();
+        int bounces = 0;
+        int conversions = 0;
+        for (var v : visits) {
+            Boolean bounce = (Boolean)v.getOrDefault("bounce", false);
+            Boolean conv = (Boolean)v.getOrDefault("conversion", false);
+            if (bounce) bounces++;
+            if (conv) conversions++;
+        }
+        double bounceRate = (double)bounces / sessions;
+        double convRate = (double)conversions / sessions;
+        metrics.put("sessions", (double)sessions);
+        metrics.put("bounceRate", bounceRate);
+        metrics.put("conversionRate", convRate);
+        return metrics;
+    }
+}
+
+// File: MetricsCalculatorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+class MetricsCalculatorTest {
+    @Test
+    void testCalculateMetrics() {
+        var v1 = Map.of("bounce", true, "conversion", false);
+        var v2 = Map.of("bounce", false, "conversion", true);
+        var metrics = new MetricsCalculator().calculateAllMetrics(List.of(v1, v2));
+        assertEquals(2.0, metrics.get("sessions"));
+        assertEquals(0.5, metrics.get("bounceRate"));
+        assertEquals(0.5, metrics.get("conversionRate"));
+    }
+    @Test
+    void testEmptyVisits() {
+        assertTrue(new MetricsCalculator().calculateAllMetrics(Collections.emptyList()).isEmpty());
+    }
+}
+
+// File: InventoryManager.java
+public class InventoryManager {
+    /**
+     * Processes shipments, sales, returns, reorders, and low-stock alerts.
+     */
+    public java.util.List<String> manageInventory(java.util.Map<String,Integer> stock,
+            java.util.List<java.util.Map<String,Object>> events) {
+        java.util.List<String> alerts = new java.util.ArrayList<>();
+        for (var e : events) {
+            String type = (String)e.get("type");
+            String item = (String)e.get("item");
+            int qty = (Integer)e.getOrDefault("qty", 0);
+            if ("shipment".equalsIgnoreCase(type)) {
+                stock.put(item, stock.getOrDefault(item, 0) + qty);
+            } else if ("sale".equalsIgnoreCase(type)) {
+                stock.put(item, stock.getOrDefault(item, 0) - qty);
+            } else if ("return".equalsIgnoreCase(type)) {
+                stock.put(item, stock.getOrDefault(item, 0) + qty);
+            }
+            if (stock.getOrDefault(item, 0) < 5) {
+                alerts.add("Low stock: " + item + "=" + stock.get(item));
+            }
+        }
+        return alerts;
+    }
+}
+
+// File: InventoryManagerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+class InventoryManagerTest {
+    @Test
+    void testManageEvents() {
+        Map<String,Integer> stock = new HashMap<>(Map.of("x", 10));
+        var shipment = Map.of("type","shipment","item","x","qty",3);
+        var sale = Map.of("type","sale","item","x","qty",9);
+        var alerts = new InventoryManager().manageInventory(stock, List.of(shipment, sale));
+        assertTrue(alerts.contains("Low stock: x=4"));
+    }
+}
+
+// File: StringStatistics.java
+import java.util.List;
+
+public class StringStatistics {
+    public String generateReport(List<String> inputs) {
+        int count = inputs.size();
+        int totalLength = 0;
+        for (String s : inputs) {
+            totalLength += s.length();
+        }
+        double average = count == 0 ? 0 : (double) totalLength / count;
+
+        String longest = "";
+        String shortest = count == 0 ? "" : inputs.get(0);
+        for (String s : inputs) {
+            if (s.length() > longest.length()) {
+                longest = s;
+            }
+            if (s.length() < shortest.length()) {
+                shortest = s;
+            }
+        }
+
+        StringBuilder report = new StringBuilder();
+        report.append("Count: ").append(count).append("\n");
+        report.append("Total Length: ").append(totalLength).append("\n");
+        report.append("Average Length: ")
+              .append(String.format("%.2f", average)).append("\n");
+        report.append("Longest: ").append(longest).append("\n");
+        report.append("Shortest: ").append(shortest).append("\n");
+        report.append("All Strings:\n");
+        for (String s : inputs) {
+            report.append(s).append("\n");
+        }
+
+        return report.toString();
+    }
+}
+
+// File: StringStatisticsTest.java
+import org.junit.jupiter.api.Test;
+import java.util.Arrays;
+import java.util.List;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class StringStatisticsTest {
+    @Test
+    public void testGenerateReport() {
+        StringStatistics stats = new StringStatistics();
+        List<String> inputs = Arrays.asList("apple", "banana", "kiwi", "pear");
+        String report = stats.generateReport(inputs);
+
+        assertTrue(report.contains("Count: 4"));
+        assertTrue(report.contains("Total Length: 20"));
+        assertTrue(report.contains("Average Length: 5.00"));
+        assertTrue(report.contains("Longest: banana"));
+        assertTrue(report.contains("Shortest: kiwi"));
+        assertTrue(report.contains("apple"));
+        assertTrue(report.contains("pear"));
+    }
+}
+
+// File: DataTransformer.java
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+
+public class DataTransformer {
+    public Map<String, Integer> transform(List<String> rawData) {
+        Map<String, Integer> result = new HashMap<>();
+
+        for (String entry : rawData) {
+            if (entry == null || entry.isEmpty()) {
+                continue;
+            }
+            String[] parts = entry.split(":");
+            if (parts.length != 2) {
+                continue;
+            }
+            String key = parts[0].trim();
+            try {
+                int value = Integer.parseInt(parts[1].trim());
+                result.put(key, result.getOrDefault(key, 0) + value);
+            } catch (NumberFormatException e) {
+                // skip invalid numbers
+            }
+        }
+
+        // adjust any negative totals back to zero
+        for (Map.Entry<String, Integer> e : result.entrySet()) {
+            if (e.getValue() < 0) {
+                result.put(e.getKey(), 0);
+            }
+        }
+
+        return result;
+    }
+}
+
+// File: DataTransformerTest.java
+import org.junit.jupiter.api.Test;
+import java.util.Arrays;
+import java.util.Map;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class DataTransformerTest {
+    @Test
+    public void testTransform() {
+        DataTransformer dt = new DataTransformer();
+        Map<String, Integer> result = dt.transform(Arrays.asList(
+            "a:10", "b:5", "a:-3", "c:foo", "", null
+        ));
+
+        // "a" -> 10 + (-3) = 7 (>=0), "b" -> 5; "c" skipped
+        assertEquals(2, result.size());
+        assertEquals(7, result.get("a"));
+        assertEquals(5, result.get("b"));
+        assertFalse(result.containsKey("c"));
+    }
+}
+
+// File: NumericAnalyzer.java
+import java.util.List;
+
+public class NumericAnalyzer {
+    public String analyze(List<Integer> numbers) {
+        if (numbers == null || numbers.isEmpty()) {
+            return "No data";
+        }
+
+        int sum = 0;
+        int product = 1;
+        int max = numbers.get(0);
+        int min = numbers.get(0);
+        int primeCount = 0;
+
+        for (int n : numbers) {
+            sum += n;
+            product *= n;
+            if (n > max) max = n;
+            if (n < min) min = n;
+            if (isPrime(n)) primeCount++;
+        }
+
+        double average = (double) sum / numbers.size();
+        int first = numbers.get(0);
+        long factorial = 1;
+        for (int i = 1; i <= first; i++) {
+            factorial *= i;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Sum: ").append(sum).append("\n");
+        sb.append("Product: ").append(product).append("\n");
+        sb.append("Max: ").append(max).append("\n");
+        sb.append("Min: ").append(min).append("\n");
+        sb.append("Average: ")
+          .append(String.format("%.2f", average)).append("\n");
+        sb.append("Primes: ").append(primeCount).append("\n");
+        sb.append("Factorial(").append(first).append("): ")
+          .append(factorial).append("\n");
+        sb.append("Numbers:\n");
+        for (int n : numbers) {
+            sb.append(n).append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    private boolean isPrime(int n) {
+        if (n <= 1) return false;
+        if (n <= 3) return true;
+        if (n % 2 == 0 || n % 3 == 0) return false;
+        for (int i = 5; i * i <= n; i += 6) {
+            if (n % i == 0 || n % (i + 2) == 0) return false;
+        }
+        return true;
+    }
+}
+
+// File: NumericAnalyzerTest.java
+import org.junit.jupiter.api.Test;
+import java.util.Arrays;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class NumericAnalyzerTest {
+    @Test
+    public void testAnalyze() {
+        NumericAnalyzer na = new NumericAnalyzer();
+        String report = na.analyze(Arrays.asList(3, 4, 5));
+
+        assertTrue(report.contains("Sum: 12"));
+        assertTrue(report.contains("Product: 60"));
+        assertTrue(report.contains("Max: 5"));
+        assertTrue(report.contains("Min: 3"));
+        assertTrue(report.contains("Average: 4.00"));
+        assertTrue(report.contains("Primes: 2"));      // 3 and 5
+        assertTrue(report.contains("Factorial(3): 6"));
+    }
+}
