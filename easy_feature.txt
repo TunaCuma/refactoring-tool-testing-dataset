@@ -1,0 +1,360 @@
+// File: InvoiceCalculator.java
+public class InvoiceCalculator {
+    /**
+     * Calculates a late fee based solely on the invoice's data.
+     */
+    public double calculateLateFee(Invoice invoice) {
+        if (invoice == null) return 0.0;
+        return invoice.getDaysOverdue() * invoice.getTotalAmount() * 0.01;
+    }
+}
+
+class Invoice {
+    private final int daysOverdue;
+    private final double totalAmount;
+    public Invoice(int daysOverdue, double totalAmount) {
+        this.daysOverdue = daysOverdue;
+        this.totalAmount = totalAmount;
+    }
+    public int getDaysOverdue() { return daysOverdue; }
+    public double getTotalAmount() { return totalAmount; }
+}
+
+// File: InvoiceCalculatorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class InvoiceCalculatorTest {
+    @Test
+    void testCalculateLateFee() {
+        Invoice invoice = new Invoice(5, 200.0);
+        InvoiceCalculator calc = new InvoiceCalculator();
+        assertEquals(5 * 200.0 * 0.01, calc.calculateLateFee(invoice));
+    }
+    @Test
+    void testCalculateLateFeeNull() {
+        InvoiceCalculator calc = new InvoiceCalculator();
+        assertEquals(0.0, calc.calculateLateFee(null));
+    }
+}
+
+// File: BudgetAnalyzer.java
+public class BudgetAnalyzer {
+    /**
+     * Determines if a project is over budget by summing its expenses.
+     */
+    public boolean isOverBudget(Project project) {
+        if (project == null) return false;
+        double sum = 0;
+        for (double e : project.getExpenses()) sum += e;
+        return sum > project.getBudget();
+    }
+}
+
+class Project {
+    private final double budget;
+    private final double[] expenses;
+    public Project(double budget, double[] expenses) {
+        this.budget = budget;
+        this.expenses = expenses;
+    }
+    public double getBudget() { return budget; }
+    public double[] getExpenses() { return expenses; }
+}
+
+// File: BudgetAnalyzerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class BudgetAnalyzerTest {
+    @Test
+    void testIsOverBudgetTrue() {
+        Project p = new Project(1000, new double[]{300, 400, 350});
+        assertTrue(new BudgetAnalyzer().isOverBudget(p));
+    }
+    @Test
+    void testIsOverBudgetFalse() {
+        Project p = new Project(1200, new double[]{300, 400, 350});
+        assertFalse(new BudgetAnalyzer().isOverBudget(p));
+    }
+}
+
+// File: DistanceFormatter.java
+public class DistanceFormatter {
+    /**
+     * Formats the distance from origin to the location.
+     */
+    public String formatDistance(Location loc) {
+        if (loc == null) return "No location";
+        double d = Math.sqrt(loc.getX()*loc.getX() + loc.getY()*loc.getY());
+        return String.format("Distance: %.2f units", d);
+    }
+}
+
+class Location {
+    private final double x, y;
+    public Location(double x, double y) { this.x = x; this.y = y; }
+    public double getX() { return x; }
+    public double getY() { return y; }
+}
+
+// File: DistanceFormatterTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class DistanceFormatterTest {
+    @Test
+    void testFormatDistance() {
+        Location loc = new Location(3, 4);
+        assertEquals("Distance: 5.00 units", new DistanceFormatter().formatDistance(loc));
+    }
+    @Test
+    void testFormatDistanceNull() {
+        assertEquals("No location", new DistanceFormatter().formatDistance(null));
+    }
+}
+
+// File: OrderEvaluator.java
+public class OrderEvaluator {
+    /**
+     * Returns true if order total exceeds a threshold.
+     */
+    public boolean isLargeOrder(Order order) {
+        if (order == null) return false;
+        return order.getQuantity() * order.getUnitPrice() > 1000;
+    }
+}
+
+class Order {
+    private final int quantity;
+    private final double unitPrice;
+    public Order(int quantity, double unitPrice) {
+        this.quantity = quantity;
+        this.unitPrice = unitPrice;
+    }
+    public int getQuantity() { return quantity; }
+    public double getUnitPrice() { return unitPrice; }
+}
+
+// File: OrderEvaluatorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class OrderEvaluatorTest {
+    @Test
+    void testIsLargeOrderTrue() {
+        Order o = new Order(50, 25.0);
+        assertTrue(new OrderEvaluator().isLargeOrder(o));
+    }
+    @Test
+    void testIsLargeOrderFalse() {
+        Order o = new Order(10, 20.0);
+        assertFalse(new OrderEvaluator().isLargeOrder(o));
+    }
+}
+
+// File: AccountReporter.java
+public class AccountReporter {
+    /**
+     * Generates a summary report string for the account.
+     */
+    public String generateReport(Account account) {
+        if (account == null) return "No account";
+        return String.format("Account %s has balance %.2f", account.getId(), account.getBalance());
+    }
+}
+
+class Account {
+    private final String id;
+    private final double balance;
+    public Account(String id, double balance) {
+        this.id = id;
+        this.balance = balance;
+    }
+    public String getId() { return id; }
+    public double getBalance() { return balance; }
+}
+
+// File: AccountReporterTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class AccountReporterTest {
+    @Test
+    void testGenerateReport() {
+        Account a = new Account("A123", 500.75);
+        assertEquals("Account A123 has balance 500.75", new AccountReporter().generateReport(a));
+    }
+    @Test
+    void testGenerateReportNull() {
+        assertEquals("No account", new AccountReporter().generateReport(null));
+    }
+}
+
+// File: PaymentTranslator.java
+public class PaymentTranslator {
+    /**
+     * Returns a human-readable string for the payment.
+     */
+    public String translate(Payment p) {
+        if (p == null) return "No payment";
+        return p.getAmount() + " " + p.getCurrency();
+    }
+}
+
+class Payment {
+    private final double amount;
+    private final String currency;
+    public Payment(double amount, String currency) {
+        this.amount = amount;
+        this.currency = currency;
+    }
+    public double getAmount() { return amount; }
+    public String getCurrency() { return currency; }
+}
+
+// File: PaymentTranslatorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class PaymentTranslatorTest {
+    @Test
+    void testTranslate() {
+        Payment p = new Payment(99.99, "USD");
+        assertEquals("99.99 USD", new PaymentTranslator().translate(p));
+    }
+    @Test
+    void testTranslateNull() {
+        assertEquals("No payment", new PaymentTranslator().translate(null));
+    }
+}
+
+// File: TemperatureConverter.java
+public class TemperatureConverter {
+    /**
+     * Converts a weather's Celsius temp to Fahrenheit.
+     */
+    public double toFahrenheit(Weather w) {
+        if (w == null) return Double.NaN;
+        return w.getCelsius() * 9/5 + 32;
+    }
+}
+
+class Weather {
+    private final double celsius;
+    public Weather(double celsius) { this.celsius = celsius; }
+    public double getCelsius() { return celsius; }
+}
+
+// File: TemperatureConverterTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class TemperatureConverterTest {
+    @Test
+    void testToFahrenheit() {
+        Weather w = new Weather(0);
+        assertEquals(32.0, new TemperatureConverter().toFahrenheit(w));
+    }
+    @Test
+    void testToFahrenheitNull() {
+        assertTrue(Double.isNaN(new TemperatureConverter().toFahrenheit(null)));
+    }
+}
+
+// File: StatCalculator.java
+public class StatCalculator {
+    /**
+     * Computes average of student scores.
+     */
+    public double average(Student s) {
+        if (s == null) return 0.0;
+        double sum = 0;
+        for (double sc : s.getScores()) sum += sc;
+        return sum / s.getScores().length;
+    }
+}
+
+class Student {
+    private final double[] scores;
+    public Student(double[] scores) { this.scores = scores; }
+    public double[] getScores() { return scores; }
+}
+
+// File: StatCalculatorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class StatCalculatorTest {
+    @Test
+    void testAverage() {
+        Student s = new Student(new double[]{80, 90, 100});
+        assertEquals(90.0, new StatCalculator().average(s));
+    }
+    @Test
+    void testAverageNull() {
+        assertEquals(0.0, new StatCalculator().average(null));
+    }
+}
+
+// File: ReservationChecker.java
+public class ReservationChecker {
+    /**
+     * Checks if reservation can fit requested days.
+     */
+    public boolean canReserve(Reservation r, int days) {
+        if (r == null) return false;
+        return r.getAvailableDays() >= days;
+    }
+}
+
+class Reservation {
+    private final int availableDays;
+    public Reservation(int availableDays) { this.availableDays = availableDays; }
+    public int getAvailableDays() { return availableDays; }
+}
+
+// File: ReservationCheckerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class ReservationCheckerTest {
+    @Test
+    void testCanReserveTrue() {
+        Reservation r = new Reservation(5);
+        assertTrue(new ReservationChecker().canReserve(r, 3));
+    }
+    @Test
+    void testCanReserveFalse() {
+        Reservation r = new Reservation(2);
+        assertFalse(new ReservationChecker().canReserve(r, 4));
+    }
+}
+
+// File: EmailComposer.java
+public class EmailComposer {
+    /**
+     * Builds a greeting email header using user info.
+     */
+    public String composeGreeting(User u) {
+        if (u == null) return "Hello, Guest";
+        return "Hello, " + u.getFirstName() + " " + u.getLastName();
+    }
+}
+
+class User {
+    private final String firstName;
+    private final String lastName;
+    public User(String firstName, String lastName) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
+    public String getFirstName() { return firstName; }
+    public String getLastName() { return lastName; }
+}
+
+// File: EmailComposerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class EmailComposerTest {
+    @Test
+    void testComposeGreeting() {
+        User u = new User("Jane", "Doe");
+        assertEquals("Hello, Jane Doe", new EmailComposer().composeGreeting(u));
+    }
+    @Test
+    void testComposeGreetingNull() {
+        assertEquals("Hello, Guest", new EmailComposer().composeGreeting(null));
+    }
+}

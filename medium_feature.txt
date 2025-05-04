@@ -1,0 +1,448 @@
+// File: ShippingCostCalculator.java
+public class ShippingCostCalculator {
+    /**
+     * Calculates shipping cost based on order details.
+     */
+    public double calculateCost(Order order) {
+        if (order == null) return 0.0;
+        double base = order.getWeight() * order.getDistance() * order.getRatePerKgPerKm();
+        double surcharge = order.isFragile() ? 10.0 : 0.0;
+        return base + surcharge;
+    }
+}
+
+class Order {
+    private final double weight;
+    private final double distance;
+    private final double ratePerKgPerKm;
+    private final boolean fragile;
+    public Order(double weight, double distance, double ratePerKgPerKm, boolean fragile) {
+        this.weight = weight;
+        this.distance = distance;
+        this.ratePerKgPerKm = ratePerKgPerKm;
+        this.fragile = fragile;
+    }
+    public double getWeight() { return weight; }
+    public double getDistance() { return distance; }
+    public double getRatePerKgPerKm() { return ratePerKgPerKm; }
+    public boolean isFragile() { return fragile; }
+}
+
+// File: ShippingCostCalculatorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class ShippingCostCalculatorTest {
+    @Test
+    void testCalculateCostNonFragile() {
+        Order o = new Order(2.0, 100.0, 0.5, false);
+        assertEquals(2.0 * 100.0 * 0.5, new ShippingCostCalculator().calculateCost(o));
+    }
+    @Test
+    void testCalculateCostFragile() {
+        Order o = new Order(1.0, 50.0, 1.0, true);
+        assertEquals(1.0 * 50.0 * 1.0 + 10.0, new ShippingCostCalculator().calculateCost(o));
+    }
+    @Test
+    void testCalculateCostNull() {
+        assertEquals(0.0, new ShippingCostCalculator().calculateCost(null));
+    }
+}
+
+// File: AddressFormatter.java
+public class AddressFormatter {
+    /**
+     * Formats a customer's address into a single string.
+     */
+    public String format(Customer customer) {
+        if (customer == null) return "";
+        return customer.getStreet() + ", " +
+               customer.getCity() + " " +
+               customer.getPostalCode() + ", " +
+               customer.getCountry();
+    }
+}
+
+class Customer {
+    private final String street, city, postalCode, country;
+    public Customer(String street, String city, String postalCode, String country) {
+        this.street = street; this.city = city;
+        this.postalCode = postalCode; this.country = country;
+    }
+    public String getStreet() { return street; }
+    public String getCity() { return city; }
+    public String getPostalCode() { return postalCode; }
+    public String getCountry() { return country; }
+}
+
+// File: AddressFormatterTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class AddressFormatterTest {
+    @Test
+    void testFormatValid() {
+        Customer c = new Customer("123 Main St", "Springfield", "12345", "USA");
+        assertEquals("123 Main St, Springfield 12345, USA", new AddressFormatter().format(c));
+    }
+    @Test
+    void testFormatNull() {
+        assertEquals("", new AddressFormatter().format(null));
+    }
+}
+
+// File: DiscountChecker.java
+public class DiscountChecker {
+    /**
+     * Checks if a customer is eligible for a discount.
+     */
+    public boolean isEligible(Customer c) {
+        if (c == null || c.getPurchaseHistory().length == 0) return false;
+        double sum = 0;
+        for (double d : c.getPurchaseHistory()) sum += d;
+        double avg = sum / c.getPurchaseHistory().length;
+        return avg > 1000 && c.getLoyaltyPoints() >= 500;
+    }
+}
+
+class Customer {
+    private final double[] purchaseHistory;
+    private final int loyaltyPoints;
+    public Customer(double[] purchaseHistory, int loyaltyPoints) {
+        this.purchaseHistory = purchaseHistory; this.loyaltyPoints = loyaltyPoints;
+    }
+    public double[] getPurchaseHistory() { return purchaseHistory; }
+    public int getLoyaltyPoints() { return loyaltyPoints; }
+}
+
+// File: DiscountCheckerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class DiscountCheckerTest {
+    @Test
+    void testEligible() {
+        Customer c = new Customer(new double[]{1200, 1100, 1300}, 600);
+        assertTrue(new DiscountChecker().isEligible(c));
+    }
+    @Test
+    void testNotEligibleLowAvg() {
+        Customer c = new Customer(new double[]{800, 900, 950}, 700);
+        assertFalse(new DiscountChecker().isEligible(c));
+    }
+    @Test
+    void testNotEligibleLowPoints() {
+        Customer c = new Customer(new double[]{1500, 1600}, 400);
+        assertFalse(new DiscountChecker().isEligible(c));
+    }
+    @Test
+    void testEligibleNullOrEmpty() {
+        assertFalse(new DiscountChecker().isEligible(null));
+        assertFalse(new DiscountChecker().isEligible(new Customer(new double[0], 1000)));
+    }
+}
+
+// File: NotificationBuilder.java
+public class NotificationBuilder {
+    /**
+     * Builds a notification string from a notification object.
+     */
+    public String build(Notification n) {
+        if (n == null) return "";
+        StringBuilder sb = new StringBuilder();
+        sb.append("To: ").append(n.getRecipientEmail()).append("\n");
+        sb.append("Subject: ").append(n.getTitle()).append("\n");
+        sb.append("Body: ").append(n.getMessage());
+        return sb.toString();
+    }
+}
+
+class Notification {
+    private final String recipientEmail, title, message;
+    public Notification(String recipientEmail, String title, String message) {
+        this.recipientEmail = recipientEmail;
+        this.title = title;
+        this.message = message;
+    }
+    public String getRecipientEmail() { return recipientEmail; }
+    public String getTitle() { return title; }
+    public String getMessage() { return message; }
+}
+
+// File: NotificationBuilderTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class NotificationBuilderTest {
+    @Test
+    void testBuild() {
+        Notification n = new Notification("a@b.com", "Hi", "Welcome!");
+        String result = new NotificationBuilder().build(n);
+        assertTrue(result.contains("To: a@b.com"));
+        assertTrue(result.contains("Subject: Hi"));
+        assertTrue(result.contains("Body: Welcome!"));
+    }
+    @Test
+    void testBuildNull() {
+        assertEquals("", new NotificationBuilder().build(null));
+    }
+}
+
+// File: PriceStatistics.java
+public class PriceStatistics {
+    /**
+     * Calculates min, max, and average prices from a catalog.
+     */
+    public String summarize(Catalog catalog) {
+        if (catalog == null || catalog.getPrices().length == 0) return "No data";
+        double min = Double.MAX_VALUE, max = Double.MIN_VALUE, sum = 0;
+        for (double p : catalog.getPrices()) {
+            if (p < min) min = p;
+            if (p > max) max = p;
+            sum += p;
+        }
+        double avg = sum / catalog.getPrices().length;
+        return String.format("min=%.2f,max=%.2f,avg=%.2f", min, max, avg);
+    }
+}
+
+class Catalog {
+    private final double[] prices;
+    public Catalog(double[] prices) { this.prices = prices; }
+    public double[] getPrices() { return prices; }
+}
+
+// File: PriceStatisticsTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class PriceStatisticsTest {
+    @Test
+    void testSummarize() {
+        Catalog c = new Catalog(new double[]{10, 20, 30});
+        assertEquals("min=10.00,max=30.00,avg=20.00", new PriceStatistics().summarize(c));
+    }
+    @Test
+    void testSummarizeNoData() {
+        assertEquals("No data", new PriceStatistics().summarize(null));
+        assertEquals("No data", new PriceStatistics().summarize(new Catalog(new double[0])));
+    }
+}
+
+// File: EmailValidator.java
+public class EmailValidator {
+    /**
+     * Validates an Email object's components.
+     */
+    public boolean isValid(Email e) {
+        if (e == null) return false;
+        String local = e.getLocalPart(), domain = e.getDomain();
+        if (local == null || domain == null) return false;
+        return local.length() > 0 && !local.contains(" ") &&
+               domain.contains(".") && !domain.startsWith(".");
+    }
+}
+
+class Email {
+    private final String localPart, domain;
+    public Email(String localPart, String domain) {
+        this.localPart = localPart; this.domain = domain;
+    }
+    public String getLocalPart() { return localPart; }
+    public String getDomain() { return domain; }
+}
+
+// File: EmailValidatorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class EmailValidatorTest {
+    @Test
+    void testValid() {
+        Email e = new Email("user", "example.com");
+        assertTrue(new EmailValidator().isValid(e));
+    }
+    @Test
+    void testInvalidLocal() {
+        Email e = new Email("", "example.com");
+        assertFalse(new EmailValidator().isValid(e));
+    }
+    @Test
+    void testInvalidDomain() {
+        Email e = new Email("user", "examplecom");
+        assertFalse(new EmailValidator().isValid(e));
+    }
+    @Test
+    void testValidNull() {
+        assertFalse(new EmailValidator().isValid(null));
+    }
+}
+
+// File: WorkHoursCalculator.java
+public class WorkHoursCalculator {
+    /**
+     * Calculates total work hours from a timesheet.
+     */
+    public int totalHours(Timesheet t) {
+        if (t == null || t.getDailyHours().length == 0) return 0;
+        int sum = 0;
+        for (int h : t.getDailyHours()) {
+            if (h > 8) sum += 8;
+            else sum += h;
+        }
+        return sum;
+    }
+}
+
+class Timesheet {
+    private final int[] dailyHours;
+    public Timesheet(int[] dailyHours) { this.dailyHours = dailyHours; }
+    public int[] getDailyHours() { return dailyHours; }
+}
+
+// File: WorkHoursCalculatorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class WorkHoursCalculatorTest {
+    @Test
+    void testTotalHoursNormal() {
+        Timesheet t = new Timesheet(new int[]{8, 7, 9, 10});
+        // caps daily to 8 on overtime days: 8+7+8+8 = 31
+        assertEquals(31, new WorkHoursCalculator().totalHours(t));
+    }
+    @Test
+    void testTotalHoursEmptyOrNull() {
+        assertEquals(0, new WorkHoursCalculator().totalHours(null));
+        assertEquals(0, new WorkHoursCalculator().totalHours(new Timesheet(new int[0])));
+    }
+}
+
+// File: PerformanceReport.java
+public class PerformanceReport {
+    /**
+     * Generates performance summary for an employee.
+     */
+    public String generate(EmployeePerformance ep) {
+        if (ep == null || ep.getScores().length == 0) return "No performance data";
+        double sum = 0;
+        for (double s : ep.getScores()) sum += s;
+        double avg = sum / ep.getScores().length;
+        String rating = avg >= 80 ? "Good" : "Needs Improvement";
+        return String.format("Avg: %.1f, Rating: %s", avg, rating);
+    }
+}
+
+class EmployeePerformance {
+    private final double[] scores;
+    public EmployeePerformance(double[] scores) { this.scores = scores; }
+    public double[] getScores() { return scores; }
+}
+
+// File: PerformanceReportTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class PerformanceReportTest {
+    @Test
+    void testGenerateGood() {
+        EmployeePerformance ep = new EmployeePerformance(new double[]{80, 90, 85});
+        assertEquals("Avg: 85.0, Rating: Good", new PerformanceReport().generate(ep));
+    }
+    @Test
+    void testGenerateNeedsImprovement() {
+        EmployeePerformance ep = new EmployeePerformance(new double[]{60, 70});
+        assertEquals("Avg: 65.0, Rating: Needs Improvement", new PerformanceReport().generate(ep));
+    }
+    @Test
+    void testGenerateNoData() {
+        assertEquals("No performance data", new PerformanceReport().generate(null));
+        assertEquals("No performance data", new PerformanceReport().generate(new EmployeePerformance(new double[0])));
+    }
+}
+
+// File: ShoppingCartAnalyzer.java
+import java.util.List;
+public class ShoppingCartAnalyzer {
+    /**
+     * Calculates total price and item count from a cart.
+     */
+    public String analyze(Cart cart) {
+        if (cart == null || cart.getItems().isEmpty()) return "Empty cart";
+        int itemCount = 0;
+        double total = 0.0;
+        for (CartItem it : cart.getItems()) {
+            itemCount += it.getQuantity();
+            total += it.getPrice() * it.getQuantity();
+        }
+        return String.format("Items: %d, Total: %.2f", itemCount, total);
+    }
+}
+
+class Cart {
+    private final List<CartItem> items;
+    public Cart(List<CartItem> items) { this.items = items; }
+    public List<CartItem> getItems() { return items; }
+}
+
+class CartItem {
+    private final String name;
+    private final double price;
+    private final int quantity;
+    public CartItem(String name, double price, int quantity) {
+        this.name = name; this.price = price; this.quantity = quantity;
+    }
+    public String getName() { return name; }
+    public double getPrice() { return price; }
+    public int getQuantity() { return quantity; }
+}
+
+// File: ShoppingCartAnalyzerTest.java
+import org.junit.jupiter.api.Test;
+import java.util.List;
+import static org.junit.jupiter.api.Assertions.*;
+class ShoppingCartAnalyzerTest {
+    @Test
+    void testAnalyze() {
+        Cart cart = new Cart(List.of(
+            new CartItem("A", 10.0, 2),
+            new CartItem("B", 5.0, 3)
+        ));
+        assertEquals("Items: 5, Total: 35.00", new ShoppingCartAnalyzer().analyze(cart));
+    }
+    @Test
+    void testAnalyzeEmptyOrNull() {
+        assertEquals("Empty cart", new ShoppingCartAnalyzer().analyze(null));
+        assertEquals("Empty cart", new ShoppingCartAnalyzer().analyze(new Cart(List.of())));
+    }
+}
+
+// File: TemperatureReportGenerator.java
+public class TemperatureReportGenerator {
+    /**
+     * Generates temperature range report from weather data.
+     */
+    public String report(WeatherData wd) {
+        if (wd == null || wd.getTemps().length == 0) return "No temperatures";
+        double min = Double.MAX_VALUE, max = Double.MIN_VALUE;
+        for (double t : wd.getTemps()) {
+            if (t < min) min = t;
+            if (t > max) max = t;
+        }
+        return String.format("Low: %.1f, High: %.1f", min, max);
+    }
+}
+
+class WeatherData {
+    private final double[] temps;
+    public WeatherData(double[] temps) { this.temps = temps; }
+    public double[] getTemps() { return temps; }
+}
+
+// File: TemperatureReportGeneratorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class TemperatureReportGeneratorTest {
+    @Test
+    void testReport() {
+        WeatherData wd = new WeatherData(new double[]{-5.0, 0.0, 15.5, 10.0});
+        assertEquals("Low: -5.0, High: 15.5", new TemperatureReportGenerator().report(wd));
+    }
+    @Test
+    void testReportNoData() {
+        assertEquals("No temperatures", new TemperatureReportGenerator().report(null));
+        assertEquals("No temperatures", new TemperatureReportGenerator().report(new WeatherData(new double[0])));
+    }
+}

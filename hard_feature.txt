@@ -1,0 +1,704 @@
+// File: PaymentSummaryGenerator.java
+import java.util.*;
+
+public class PaymentSummaryGenerator {
+    /**
+     * Generates a summary for payments: groups by currency with count, total, average.
+     */
+    public String generateSummary(PaymentData data) {
+        if (data == null || data.getPayments() == null || data.getPayments().isEmpty()) {
+            return "No payments available";
+        }
+        Map<String, List<Double>> groups = new HashMap<>();
+        for (Payment p : data.getPayments()) {
+            if (p == null) continue;
+            groups.computeIfAbsent(p.getCurrency(), k -> new ArrayList<>()).add(p.getAmount());
+        }
+        StringBuilder sb = new StringBuilder("Summary:\n");
+        for (Map.Entry<String, List<Double>> entry : groups.entrySet()) {
+            List<Double> amounts = entry.getValue();
+            double total = 0;
+            for (double amt : amounts) total += amt;
+            double avg = total / amounts.size();
+            sb.append(entry.getKey())
+              .append(": count=").append(amounts.size())
+              .append(", total=").append(String.format("%.2f", total))
+              .append(", avg=").append(String.format("%.2f", avg))
+              .append("\n");
+        }
+        return sb.toString().trim();
+    }
+}
+
+class PaymentData {
+    private final List<Payment> payments;
+    public PaymentData(List<Payment> payments) { this.payments = payments; }
+    public List<Payment> getPayments() { return payments; }
+}
+
+class Payment {
+    private final double amount;
+    private final String currency;
+    public Payment(double amount, String currency) {
+        this.amount = amount; this.currency = currency;
+    }
+    public double getAmount() { return amount; }
+    public String getCurrency() { return currency; }
+}
+
+// File: PaymentSummaryGeneratorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+
+class PaymentSummaryGeneratorTest {
+    @Test
+    void testGenerateMultiple() {
+        List<Payment> list = Arrays.asList(
+            new Payment(100, "USD"),
+            new Payment(50, "EUR"),
+            new Payment(200, "USD"),
+            null
+        );
+        PaymentData data = new PaymentData(list);
+        String result = new PaymentSummaryGenerator().generateSummary(data);
+        assertTrue(result.contains("USD: count=2, total=300.00, avg=150.00"));
+        assertTrue(result.contains("EUR: count=1, total=50.00, avg=50.00"));
+    }
+    @Test
+    void testGenerateEmpty() {
+        assertEquals("No payments available",
+            new PaymentSummaryGenerator().generateSummary(null));
+        assertEquals("No payments available",
+            new PaymentSummaryGenerator().generateSummary(new PaymentData(new ArrayList<>())));
+    }
+}
+
+
+// File: CustomerProfileBuilder.java
+import java.util.*;
+
+public class CustomerProfileBuilder {
+    /**
+     * Builds a profile summary including name, address, and recent orders.
+     */
+    public String buildProfile(CustomerData data) {
+        if (data == null || data.getCustomer() == null) {
+            return "No customer data";
+        }
+        Customer c = data.getCustomer();
+        StringBuilder sb = new StringBuilder();
+        sb.append("Name: ").append(c.getFirstName()).append(" ").append(c.getLastName()).append("\n");
+        sb.append("Address: ").append(c.getAddress()).append("\n");
+        List<Order> orders = data.getOrders();
+        if (orders == null || orders.isEmpty()) {
+            sb.append("No orders\n");
+        } else {
+            sb.append("Orders:\n");
+            for (Order o : orders) {
+                sb.append("- ").append(o.getItem()).append(": ").append(o.getQuantity()).append("\n");
+            }
+        }
+        return sb.toString().trim();
+    }
+}
+
+class CustomerData {
+    private final Customer customer;
+    private final List<Order> orders;
+    public CustomerData(Customer customer, List<Order> orders) {
+        this.customer = customer; this.orders = orders;
+    }
+    public Customer getCustomer() { return customer; }
+    public List<Order> getOrders() { return orders; }
+}
+
+class Customer {
+    private final String firstName, lastName, address;
+    public Customer(String firstName, String lastName, String address) {
+        this.firstName = firstName; this.lastName = lastName; this.address = address;
+    }
+    public String getFirstName() { return firstName; }
+    public String getLastName() { return lastName; }
+    public String getAddress() { return address; }
+}
+
+class Order {
+    private final String item;
+    private final int quantity;
+    public Order(String item, int quantity) {
+        this.item = item; this.quantity = quantity;
+    }
+    public String getItem() { return item; }
+    public int getQuantity() { return quantity; }
+}
+
+// File: CustomerProfileBuilderTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+
+class CustomerProfileBuilderTest {
+    @Test
+    void testBuildWithOrders() {
+        Customer c = new Customer("John", "Doe", "123 Elm St");
+        List<Order> orders = Arrays.asList(new Order("Book",2), new Order("Pen",5));
+        CustomerData data = new CustomerData(c, orders);
+        String result = new CustomerProfileBuilder().buildProfile(data);
+        assertTrue(result.contains("Name: John Doe"));
+        assertTrue(result.contains("Address: 123 Elm St"));
+        assertTrue(result.contains("- Book: 2"));
+        assertTrue(result.contains("- Pen: 5"));
+    }
+    @Test
+    void testBuildNoOrders() {
+        Customer c = new Customer("Jane","Smith","456 Oak Ave");
+        String profile = new CustomerProfileBuilder().buildProfile(new CustomerData(c, Collections.emptyList()));
+        assertTrue(profile.contains("No orders"));
+    }
+    @Test
+    void testBuildNullData() {
+        assertEquals("No customer data",
+            new CustomerProfileBuilder().buildProfile(null));
+    }
+}
+
+
+// File: TravelItineraryPrinter.java
+import java.util.*;
+
+public class TravelItineraryPrinter {
+    /**
+     * Prints itinerary with flight details and layovers.
+     */
+    public String printItinerary(Itinerary iti) {
+        if (iti == null || iti.getFlights() == null) {
+            return "No itinerary";
+        }
+        StringBuilder sb = new StringBuilder("Itinerary:\n");
+        for (Flight f : iti.getFlights()) {
+            sb.append(f.getDeparture()).append("->").append(f.getArrival())
+              .append(" (").append(f.getDuration()).append("h)");
+            if (f.hasLayover()) {
+                sb.append(" Layover: ").append(f.getLayoverDuration()).append("h");
+            }
+            sb.append("\n");
+        }
+        return sb.toString().trim();
+    }
+}
+
+class Itinerary {
+    private final List<Flight> flights;
+    public Itinerary(List<Flight> flights) { this.flights = flights; }
+    public List<Flight> getFlights() { return flights; }
+}
+
+class Flight {
+    private final String departure, arrival;
+    private final double duration;
+    private final Double layoverDuration;
+    public Flight(String departure, String arrival, double duration, Double layoverDuration) {
+        this.departure = departure; this.arrival = arrival;
+        this.duration = duration; this.layoverDuration = layoverDuration;
+    }
+    public String getDeparture() { return departure; }
+    public String getArrival() { return arrival; }
+    public double getDuration() { return duration; }
+    public boolean hasLayover() { return layoverDuration != null; }
+    public double getLayoverDuration() { return layoverDuration; }
+}
+
+// File: TravelItineraryPrinterTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+
+class TravelItineraryPrinterTest {
+    @Test
+    void testPrintWithLayover() {
+        Flight f1 = new Flight("NYC","LAX",6.0,null);
+        Flight f2 = new Flight("LAX","SFO",1.5,0.5);
+        Itinerary iti = new Itinerary(Arrays.asList(f1,f2));
+        String res = new TravelItineraryPrinter().printItinerary(iti);
+        assertTrue(res.contains("NYC->LAX (6.0h)"));
+        assertTrue(res.contains("LAX->SFO (1.5h) Layover: 0.5h"));
+    }
+    @Test
+    void testPrintEmpty() {
+        assertEquals("No itinerary",
+            new TravelItineraryPrinter().printItinerary(null));
+        assertEquals("No itinerary",
+            new TravelItineraryPrinter().printItinerary(new Itinerary(null)));
+    }
+}
+
+
+// File: AnalyticsReportGenerator.java
+import java.util.*;
+
+public class AnalyticsReportGenerator {
+    /**
+     * Generates report of min, max, avg for each metric.
+     */
+    public String generateReport(AnalyticsData data) {
+        if (data == null || data.getMetrics() == null || data.getMetrics().isEmpty()) {
+            return "No analytics data";
+        }
+        StringBuilder sb = new StringBuilder("Analytics Report:\n");
+        for (Map.Entry<String, List<Integer>> entry : data.getMetrics().entrySet()) {
+            String name = entry.getKey();
+            List<Integer> values = entry.getValue();
+            if (values == null || values.isEmpty()) continue;
+            int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE, sum = 0;
+            for (int v : values) {
+                if (v < min) min = v;
+                if (v > max) max = v;
+                sum += v;
+            }
+            double avg = sum / (double) values.size();
+            sb.append(name)
+              .append(": min=").append(min)
+              .append(", max=").append(max)
+              .append(", avg=").append(String.format("%.2f", avg))
+              .append("\n");
+        }
+        return sb.toString().trim();
+    }
+}
+
+class AnalyticsData {
+    private final Map<String, List<Integer>> metrics;
+    public AnalyticsData(Map<String, List<Integer>> metrics) {
+        this.metrics = metrics;
+    }
+    public Map<String, List<Integer>> getMetrics() { return metrics; }
+}
+
+// File: AnalyticsReportGeneratorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+
+class AnalyticsReportGeneratorTest {
+    @Test
+    void testGenerateReport() {
+        Map<String, List<Integer>> m = new HashMap<>();
+        m.put("visits", Arrays.asList(100, 200, 150));
+        m.put("clicks", Arrays.asList(10, 20));
+        AnalyticsData data = new AnalyticsData(m);
+        String res = new AnalyticsReportGenerator().generateReport(data);
+        assertTrue(res.contains("visits: min=100, max=200, avg=150.00"));
+        assertTrue(res.contains("clicks: min=10, max=20, avg=15.00"));
+    }
+    @Test
+    void testGenerateEmpty() {
+        assertEquals("No analytics data",
+            new AnalyticsReportGenerator().generateReport(null));
+        assertEquals("No analytics data",
+            new AnalyticsReportGenerator().generateReport(new AnalyticsData(new HashMap<>())));
+    }
+}
+
+
+// File: InventoryReportFormatter.java
+import java.util.*;
+
+public class InventoryReportFormatter {
+    /**
+     * Formats inventory report with reorder flags.
+     */
+    public String formatReport(Inventory inv) {
+        if (inv == null || inv.getItems() == null) {
+            return "No inventory";
+        }
+        StringBuilder sb = new StringBuilder("Inventory Report:\n");
+        for (Item item : inv.getItems()) {
+            sb.append(item.getName())
+              .append(" - Stock: ").append(item.getStock());
+            if (item.getStock() < item.getReorderLevel()) {
+                sb.append(" [REORDER]");
+            }
+            sb.append("\n");
+        }
+        return sb.toString().trim();
+    }
+}
+
+class Inventory {
+    private final List<Item> items;
+    public Inventory(List<Item> items) { this.items = items; }
+    public List<Item> getItems() { return items; }
+}
+
+class Item {
+    private final String name;
+    private final int stock;
+    private final int reorderLevel;
+    public Item(String name, int stock, int reorderLevel) {
+        this.name = name; this.stock = stock; this.reorderLevel = reorderLevel;
+    }
+    public String getName() { return name; }
+    public int getStock() { return stock; }
+    public int getReorderLevel() { return reorderLevel; }
+}
+
+// File: InventoryReportFormatterTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+
+class InventoryReportFormatterTest {
+    @Test
+    void testFormatReport() {
+        List<Item> items = Arrays.asList(
+            new Item("Widget", 5, 10),
+            new Item("Gadget", 20, 15)
+        );
+        Inventory inv = new Inventory(items);
+        String res = new InventoryReportFormatter().formatReport(inv);
+        assertTrue(res.contains("Widget - Stock: 5 [REORDER]"));
+        assertTrue(res.contains("Gadget - Stock: 20"));
+    }
+    @Test
+    void testFormatEmpty() {
+        assertEquals("No inventory", new InventoryReportFormatter().formatReport(null));
+        assertEquals("No inventory", new InventoryReportFormatter().formatReport(new Inventory(null)));
+    }
+}
+
+
+// File: TransactionFeeCalculator.java
+import java.util.*;
+
+public class TransactionFeeCalculator {
+    /**
+     * Calculates total fees for a batch of transactions.
+     */
+    public double calculateFees(TransactionBatch batch) {
+        if (batch == null || batch.getTransactions() == null) return 0.0;
+        double totalFee = 0.0;
+        for (Transaction t : batch.getTransactions()) {
+            if (t == null) continue;
+            double amt = t.getAmount();
+            String type = t.getType();
+            if ("withdrawal".equals(type)) {
+                totalFee += amt * 0.025;
+            } else if ("deposit".equals(type)) {
+                totalFee += amt * 0.01;
+            } else {
+                totalFee += amt * 0.05;
+            }
+        }
+        return totalFee;
+    }
+}
+
+class TransactionBatch {
+    private final List<Transaction> transactions;
+    public TransactionBatch(List<Transaction> transactions) {
+        this.transactions = transactions;
+    }
+    public List<Transaction> getTransactions() { return transactions; }
+}
+
+class Transaction {
+    private final double amount;
+    private final String type;
+    public Transaction(double amount, String type) {
+        this.amount = amount; this.type = type;
+    }
+    public double getAmount() { return amount; }
+    public String getType() { return type; }
+}
+
+// File: TransactionFeeCalculatorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+
+class TransactionFeeCalculatorTest {
+    @Test
+    void testCalculateFees() {
+        List<Transaction> list = Arrays.asList(
+            new Transaction(100, "withdrawal"),
+            new Transaction(200, "deposit"),
+            new Transaction(50, "transfer"),
+            null
+        );
+        TransactionBatch batch = new TransactionBatch(list);
+        double fees = new TransactionFeeCalculator().calculateFees(batch);
+        assertEquals(7.0, fees, 0.0001); // 2.5 + 2.0 + 2.5
+    }
+    @Test
+    void testCalculateFeesEmpty() {
+        assertEquals(0.0, new TransactionFeeCalculator().calculateFees(null));
+        assertEquals(0.0, new TransactionFeeCalculator().calculateFees(new TransactionBatch(null)));
+    }
+}
+
+
+// File: LoyaltyPointsCalculator.java
+import java.util.*;
+
+public class LoyaltyPointsCalculator {
+    /**
+     * Calculates loyalty points based on activities.
+     */
+    public int calculatePoints(LoyaltyAccount account) {
+        if (account == null || account.getActivities() == null) return 0;
+        int points = 0;
+        for (Activity a : account.getActivities()) {
+            if (a == null) continue;
+            switch (a.getType()) {
+                case "purchase":
+                    points += a.getValue();
+                    break;
+                case "review":
+                    points += 10;
+                    break;
+                case "referral":
+                    points += 50;
+                    break;
+                default:
+                    points += 1;
+            }
+        }
+        return points;
+    }
+}
+
+class LoyaltyAccount {
+    private final List<Activity> activities;
+    public LoyaltyAccount(List<Activity> activities) {
+        this.activities = activities;
+    }
+    public List<Activity> getActivities() { return activities; }
+}
+
+class Activity {
+    private final String type;
+    private final int value;
+    public Activity(String type, int value) {
+        this.type = type; this.value = value;
+    }
+    public String getType() { return type; }
+    public int getValue() { return value; }
+}
+
+// File: LoyaltyPointsCalculatorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+
+class LoyaltyPointsCalculatorTest {
+    @Test
+    void testCalculatePoints() {
+        List<Activity> acts = Arrays.asList(
+            new Activity("purchase", 100),
+            new Activity("review", 0),
+            new Activity("referral", 0),
+            new Activity("unknown", 5)
+        );
+        LoyaltyAccount acc = new LoyaltyAccount(acts);
+        assertEquals(161, new LoyaltyPointsCalculator().calculatePoints(acc));
+    }
+    @Test
+    void testCalculatePointsEmpty() {
+        assertEquals(0, new LoyaltyPointsCalculator().calculatePoints(null));
+        assertEquals(0, new LoyaltyPointsCalculator().calculatePoints(new LoyaltyAccount(null)));
+    }
+}
+
+
+// File: TaxCalculator.java
+import java.util.*;
+
+public class TaxCalculator {
+    /**
+     * Calculates tax based on income and tax brackets.
+     */
+    public double calculateTax(TaxInfo info) {
+        if (info == null || info.getBrackets() == null) return 0.0;
+        double income = info.getIncome();
+        double tax = 0.0;
+        double remaining = income;
+        for (TaxBracket b : info.getBrackets()) {
+            if (remaining <= 0) break;
+            double taxable = Math.min(remaining, b.getThreshold());
+            tax += taxable * b.getRate();
+            remaining -= taxable;
+        }
+        return tax;
+    }
+}
+
+class TaxInfo {
+    private final double income;
+    private final List<TaxBracket> brackets;
+    public TaxInfo(double income, List<TaxBracket> brackets) {
+        this.income = income; this.brackets = brackets;
+    }
+    public double getIncome() { return income; }
+    public List<TaxBracket> getBrackets() { return brackets; }
+}
+
+class TaxBracket {
+    private final double threshold;
+    private final double rate;
+    public TaxBracket(double threshold, double rate) {
+        this.threshold = threshold; this.rate = rate;
+    }
+    public double getThreshold() { return threshold; }
+    public double getRate() { return rate; }
+}
+
+// File: TaxCalculatorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+
+class TaxCalculatorTest {
+    @Test
+    void testCalculateTax() {
+        List<TaxBracket> brackets = Arrays.asList(
+            new TaxBracket(1000, 0.1),
+            new TaxBracket(2000, 0.2)
+        );
+        TaxInfo info = new TaxInfo(2500, brackets);
+        assertEquals(400.0, new TaxCalculator().calculateTax(info), 0.0001);
+    }
+    @Test
+    void testCalculateTaxEmpty() {
+        assertEquals(0.0, new TaxCalculator().calculateTax(null));
+        assertEquals(0.0, new TaxCalculator().calculateTax(new TaxInfo(1000, null)));
+    }
+}
+
+
+// File: EmailBatchFormatter.java
+import java.util.*;
+
+public class EmailBatchFormatter {
+    /**
+     * Formats a batch of emails into one string separated by delimiters.
+     */
+    public String formatBatch(EmailBatch batch) {
+        if (batch == null || batch.getEmails() == null || batch.getEmails().isEmpty()) {
+            return "No emails";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Email e : batch.getEmails()) {
+            if (e == null) continue;
+            sb.append("To: ").append(e.getRecipient()).append("\n")
+              .append("Subject: ").append(e.getSubject()).append("\n")
+              .append(e.getBody()).append("\n")
+              .append("----\n");
+        }
+        return sb.toString().trim();
+    }
+}
+
+class EmailBatch {
+    private final List<Email> emails;
+    public EmailBatch(List<Email> emails) { this.emails = emails; }
+    public List<Email> getEmails() { return emails; }
+}
+
+class Email {
+    private final String recipient, subject, body;
+    public Email(String recipient, String subject, String body) {
+        this.recipient = recipient; this.subject = subject; this.body = body;
+    }
+    public String getRecipient() { return recipient; }
+    public String getSubject() { return subject; }
+    public String getBody() { return body; }
+}
+
+// File: EmailBatchFormatterTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+
+class EmailBatchFormatterTest {
+    @Test
+    void testFormatBatch() {
+        List<Email> list = Arrays.asList(
+            new Email("a@b.com","Hi","Hello"),
+            new Email("c@d.com","Hi2","Hello2"),
+            null
+        );
+        EmailBatch batch = new EmailBatch(list);
+        String res = new EmailBatchFormatter().formatBatch(batch);
+        assertTrue(res.contains("To: a@b.com"));
+        assertTrue(res.contains("Subject: Hi2"));
+        assertTrue(res.contains("----"));
+    }
+    @Test
+    void testFormatEmpty() {
+        assertEquals("No emails", new EmailBatchFormatter().formatBatch(null));
+        assertEquals("No emails", new EmailBatchFormatter().formatBatch(new EmailBatch(new ArrayList<>())));
+    }
+}
+
+
+// File: ScheduleFormatter.java
+import java.util.*;
+
+public class ScheduleFormatter {
+    /**
+     * Formats schedule slots into a human-readable list.
+     */
+    public String formatSchedule(Schedule schedule) {
+        if (schedule == null || schedule.getSlots() == null) {
+            return "No schedule";
+        }
+        StringBuilder sb = new StringBuilder("Schedule:\n");
+        for (Slot s : schedule.getSlots()) {
+            sb.append(s.getDay()).append(": ")
+              .append(s.getStartTime()).append("-").append(s.getEndTime())
+              .append("\n");
+        }
+        return sb.toString().trim();
+    }
+}
+
+class Schedule {
+    private final List<Slot> slots;
+    public Schedule(List<Slot> slots) { this.slots = slots; }
+    public List<Slot> getSlots() { return slots; }
+}
+
+class Slot {
+    private final String day, startTime, endTime;
+    public Slot(String day, String startTime, String endTime) {
+        this.day = day; this.startTime = startTime; this.endTime = endTime;
+    }
+    public String getDay() { return day; }
+    public String getStartTime() { return startTime; }
+    public String getEndTime() { return endTime; }
+}
+
+// File: ScheduleFormatterTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import java.util.*;
+
+class ScheduleFormatterTest {
+    @Test
+    void testFormatSchedule() {
+        List<Slot> slots = Arrays.asList(
+            new Slot("Mon","09:00","17:00"),
+            new Slot("Tue","10:00","16:00")
+        );
+        Schedule schedule = new Schedule(slots);
+        String res = new ScheduleFormatter().formatSchedule(schedule);
+        assertTrue(res.contains("Mon: 09:00-17:00"));
+        assertTrue(res.contains("Tue: 10:00-16:00"));
+    }
+    @Test
+    void testFormatEmpty() {
+        assertEquals("No schedule", new ScheduleFormatter().formatSchedule(null));
+        assertEquals("No schedule", new ScheduleFormatter().formatSchedule(new Schedule(null)));
+    }
+}
