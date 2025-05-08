@@ -1,0 +1,404 @@
+// File: CentralManager.java
+public class CentralManager {
+    private java.util.List<String> users = new java.util.ArrayList<>();
+    private java.util.Map<String, java.util.Map<String, Object>> orderData = new java.util.HashMap<>();
+    private java.sql.Connection dbConnection;
+    private java.util.Properties config = new java.util.Properties();
+    private final String configPath = "app.properties";
+    private java.net.HttpURLConnection httpConn;
+    private java.io.File logFile = new java.io.File("app.log");
+    private java.util.Map<String, Object> cache = new java.util.HashMap<>();
+    private boolean initialized;
+    private int activeSessions;
+    
+    public CentralManager() { /* heavy setup omitted */ }
+    public void initialize() throws Exception { loadConfig(); connectDatabase(); setupHttpConnection(); initialized = true; }
+    private void loadConfig() throws java.io.IOException { try (java.io.FileInputStream fis = new java.io.FileInputStream(configPath)) { config.load(fis); } }
+    private void connectDatabase() throws java.sql.SQLException { dbConnection = java.sql.DriverManager.getConnection(
+        config.getProperty("db.url"), config.getProperty("db.user"), config.getProperty("db.pass")
+    ); }
+    private void setupHttpConnection() throws java.io.IOException {
+        java.net.URL url = new java.net.URL(config.getProperty("api.endpoint"));
+        httpConn = (java.net.HttpURLConnection) url.openConnection();
+        httpConn.setRequestMethod("GET");
+    }
+    public java.util.List<String> fetchData() throws Exception {
+        java.util.List<String> result = new java.util.ArrayList<>();
+        try (java.io.BufferedReader br = new java.io.BufferedReader(
+            new java.io.InputStreamReader(httpConn.getInputStream()))) {
+            String line;
+            while ((line = br.readLine()) != null) result.add(line);
+        }
+        return result;
+    }
+    public void processData() throws Exception {
+        for (String item : fetchData()) {
+            java.util.Map<String,Object> record = new java.util.HashMap<>(); record.put("value", item);
+            orderData.put(item, record);
+        }
+    }
+    public void renderUI() { System.out.println("Users: " + users); System.out.println("Sessions: " + activeSessions); }
+    public void saveData() throws Exception { try (java.io.FileWriter fw = new java.io.FileWriter("output.json")) {
+            com.google.gson.Gson g = new com.google.gson.Gson(); fw.write(g.toJson(orderData)); }
+    }
+    public boolean shutdown() { try { if (dbConnection!=null&&!dbConnection.isClosed()) dbConnection.close(); return true;} catch(Exception e) {return false;} }
+    public boolean isInitialized() { return initialized; }
+}
+
+// File: CentralManagerTest.java
+import org.junit.jupiter.api.Test; import static org.junit.jupiter.api.Assertions.*;
+class CentralManagerTest {
+    @Test
+    void testInitialize() throws Exception {
+        CentralManager mgr = new CentralManager();
+        mgr.initialize();
+        assertTrue(mgr.isInitialized());
+    }
+    @Test
+    void testFetchDataEmpty() throws Exception {
+        CentralManager mgr = new CentralManager();
+        mgr.initialize();
+        assertNotNull(mgr.fetchData());
+    }
+}
+
+// File: ApplicationService.java
+public class ApplicationService {
+    private java.util.Map<String,String> sessions = new java.util.HashMap<>();
+    private java.util.List<String> logs = new java.util.ArrayList<>();
+    private java.sql.Connection conn;
+    private final String dbUrl;
+    private final int maxUsers;
+    private java.io.FileWriter logWriter;
+    private boolean active;
+    private int requestCount;
+    private java.util.Properties props = new java.util.Properties();
+    private java.net.Socket socket;
+    private String mode;
+
+    public ApplicationService(String url, int max) { this.dbUrl=url; this.maxUsers=max; }
+    public void start() throws Exception { props.load(new java.io.FileInputStream("service.properties")); conn=java.sql.DriverManager.getConnection(dbUrl); active=true; }
+    public void stop() throws Exception { if(conn!=null) conn.close(); active=false; }
+    public boolean isActive() { return active; }
+    public String handleRequest(String user, String payload) throws Exception {
+        if(requestCount++>maxUsers) throw new IllegalStateException("Too many users");
+        sessions.put(user, payload);
+        logEvent(user, payload);
+        return "OK:"+payload;
+    }
+    private void logEvent(String user, String payload) throws Exception {
+        if(logWriter==null) logWriter=new java.io.FileWriter("app.log", true);
+        logWriter.write(user+":"+payload+"\n");
+    }
+    public java.util.Map<String,String> getSessions() { return sessions; }
+}
+
+// File: ApplicationServiceTest.java
+import org.junit.jupiter.api.Test; import static org.junit.jupiter.api.Assertions.*;
+class ApplicationServiceTest {
+    @Test
+    void testStartStop() throws Exception {
+        ApplicationService svc = new ApplicationService("jdbc:h2:mem:test",5);
+        svc.start(); assertTrue(svc.isActive()); svc.stop(); assertFalse(svc.isActive());
+    }
+    @Test
+    void testHandleRequest() throws Exception {
+        ApplicationService svc = new ApplicationService("jdbc:h2:mem:test",2);
+        svc.start(); String resp = svc.handleRequest("u1","data");
+        assertEquals("OK:data", resp);
+    }
+}
+
+// File: UIAndDataController.java
+public class UIAndDataController {
+    private javax.swing.JFrame frame;
+    private java.util.List<String> data = new java.util.ArrayList<>();
+    private java.sql.Connection conn;
+    private java.io.File configFile = new java.io.File("ui.cfg");
+    private java.util.Properties uiProps = new java.util.Properties();
+    private int width, height;
+    private boolean visible;
+    private String title;
+    private java.awt.event.ActionListener listener;
+    private java.net.URL api;
+    private java.net.HttpURLConnection httpC;
+
+    public UIAndDataController() {}
+    public void initUI() throws Exception { uiProps.load(new java.io.FileInputStream(configFile)); frame=new javax.swing.JFrame(uiProps.getProperty("title")); frame.setSize(width, height); frame.setVisible(true); visible=true; }
+    public void loadData() throws Exception { conn=java.sql.DriverManager.getConnection("jdbc:h2:mem:"+title); try (java.sql.ResultSet rs=conn.createStatement().executeQuery("SELECT * FROM DATA")) { while(rs.next()) data.add(rs.getString(1)); }}
+    public void fetchRemote() throws Exception {
+        httpC=(java.net.HttpURLConnection) api.openConnection();
+        for(String line:new java.io.BufferedReader(new java.io.InputStreamReader(httpC.getInputStream())).lines().toList()) data.add(line);
+    }
+    public void render() { frame.repaint(); System.out.println("Data size: "+data.size()); }
+    public boolean shutdown() throws Exception { if(conn!=null) conn.close(); frame.dispose(); return true; }
+}
+
+// File: UIAndDataControllerTest.java
+import org.junit.jupiter.api.Test; import static org.junit.jupiter.api.Assertions.*;
+class UIAndDataControllerTest {
+    @Test
+    void testInitShutdown() throws Exception {
+        UIAndDataController ctrl = new UIAndDataController();
+        ctrl.initUI(); assertTrue(ctrl.visible);
+        assertTrue(ctrl.shutdown());
+    }
+    @Test
+    void testLoadDataEmpty() throws Exception {
+        UIAndDataController ctrl = new UIAndDataController();
+        // without DB table, loadData should not throw
+        ctrl.loadData();
+        assertTrue(true);
+    }
+}
+
+// File: SystemCoordinator.java
+public class SystemCoordinator {
+    private java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(4);
+    private java.util.List<java.sql.Connection> connections = new java.util.ArrayList<>();
+    private java.util.Map<String,Integer> metrics = new java.util.HashMap<>();
+    private java.io.File config = new java.io.File("coord.cfg");
+    private java.util.Properties props = new java.util.Properties();
+    private boolean running;
+    private java.net.ServerSocket server;
+    private java.net.Socket client;
+    private int port;
+    private java.util.Timer timer;
+    private java.io.FileWriter auditLog;
+
+    public void start() throws Exception { props.load(new java.io.FileInputStream(config)); port=Integer.parseInt(props.getProperty("port")); server=new java.net.ServerSocket(port); running=true; }
+    public void acceptClient() throws Exception { client=server.accept(); }
+    public void recordMetric(String name,int value) { metrics.put(name,value); }
+    public void scheduleTask(java.util.TimerTask task,long delay) { timer=new java.util.Timer(); timer.schedule(task, delay); }
+    public void stop() throws Exception { if(server!=null) server.close(); executor.shutdown(); running=false; }
+    public boolean isRunning() { return running; }
+}
+
+// File: SystemCoordinatorTest.java
+import org.junit.jupiter.api.Test; import static org.junit.jupiter.api.Assertions.*;
+class SystemCoordinatorTest {
+    @Test
+    void testStartStop() throws Exception {
+        SystemCoordinator coord = new SystemCoordinator();
+        // no config file -> exception expected
+        assertThrows(Exception.class, coord::start);
+    }
+    @Test
+    void testRecordMetric() {
+        SystemCoordinator coord = new SystemCoordinator();
+        coord.recordMetric("cpu", 50);
+        assertEquals(50, coord.metrics.get("cpu"));
+    }
+}
+
+// File: MegaDashboard.java
+public class MegaDashboard {
+    private java.util.List<String> widgets = new java.util.ArrayList<>();
+    private java.util.Map<String,Object> context = new java.util.HashMap<>();
+    private java.awt.Frame awtFrame;
+    private int refreshRate;
+    private java.time.LocalDateTime lastRefresh;
+    private java.util.Properties dashProps = new java.util.Properties();
+    private java.io.File dashFile = new java.io.File("dash.cfg");
+    private boolean visible;
+    private java.io.BufferedReader reader;
+    private java.io.BufferedWriter writer;
+    private java.net.URL dataUrl;
+
+    public void loadConfig() throws Exception { dashProps.load(new java.io.FileInputStream(dashFile)); refreshRate=Integer.parseInt(dashProps.getProperty("rate")); }
+    public void connect() throws Exception { reader = new java.io.BufferedReader(new java.io.FileReader(dashFile)); }
+    public void refresh() throws Exception { lastRefresh = java.time.LocalDateTime.now(); }
+    public void render() { visible=true; awtFrame.repaint(); }
+    public void saveState() throws Exception { writer=new java.io.BufferedWriter(new java.io.FileWriter("state.dat")); writer.write(context.toString()); writer.close(); }
+    public void close() { if(writer!=null) try{writer.close();}catch(Exception e){} }
+    public boolean isVisible() { return visible; }
+}
+
+// File: MegaDashboardTest.java
+import org.junit.jupiter.api.Test; import static org.junit.jupiter.api.Assertions.*;
+class MegaDashboardTest {
+    @Test
+    void testRefreshAndRender() throws Exception {
+        MegaDashboard dash = new MegaDashboard();
+        dash.refresh(); assertNotNull(dash.lastRefresh);
+        dash.render(); assertTrue(dash.isVisible());
+    }
+    @Test
+    void testSaveStateNoException() throws Exception {
+        MegaDashboard dash = new MegaDashboard();
+        assertDoesNotThrow(dash::saveState);
+    }
+}
+
+// File: GlobalProcessor.java
+public class GlobalProcessor {
+    private java.util.List<Integer> numbers = new java.util.ArrayList<>();
+    private java.util.Map<Integer,String> map = new java.util.HashMap<>();
+    private int sum;
+    private double average;
+    private String summary;
+    private java.io.File outFile;
+    private java.io.BufferedWriter bw;
+    private boolean processed;
+    private java.time.LocalDateTime timestamp;
+    private java.net.Socket sock;
+    private java.util.Properties props = new java.util.Properties();
+
+    public void ingest(int n) { numbers.add(n); }
+    public void computeStats() {
+        sum = numbers.stream().mapToInt(i->i).sum(); average = sum/(double)numbers.size();
+    }
+    public void buildSummary() { summary = "Count:"+numbers.size()+" Sum:"+sum; processed=true; }
+    public void export() throws Exception { bw = new java.io.BufferedWriter(new java.io.FileWriter("stats.txt")); bw.write(summary); bw.close(); }
+    public boolean isProcessed() { return processed; }
+}
+
+// File: GlobalProcessorTest.java
+import org.junit.jupiter.api.Test; import static org.junit.jupiter.api.Assertions.*;
+class GlobalProcessorTest {
+    @Test
+    void testComputeBuild() throws Exception {
+        GlobalProcessor p = new GlobalProcessor(); p.ingest(1); p.ingest(2); p.computeStats(); p.buildSummary();
+        assertTrue(p.isProcessed());
+    }
+    @Test
+    void testExportNoException() throws Exception { GlobalProcessor p = new GlobalProcessor(); p.ingest(5); p.computeStats(); p.buildSummary(); assertDoesNotThrow(p::export); }
+}
+
+// File: AllInOneHandler.java
+public class AllInOneHandler {
+    private java.util.Queue<String> queue = new java.util.LinkedList<>();
+    private java.util.Map<String,String> store = new java.util.HashMap<>();
+    private java.io.RandomAccessFile raf;
+    private java.net.DatagramSocket ds;
+    private java.nio.file.Path path;
+    private boolean ready;
+    private java.util.List<Integer> list = new java.util.ArrayList<>();
+    private int counter;
+    private String mode;
+
+    public void prepare(String file) throws Exception { path = java.nio.file.Paths.get(file); raf=new java.io.RandomAccessFile(file,"rw"); ready=true; }
+    public void enqueue(String msg) { queue.offer(msg); }
+    public String dequeue() { return queue.poll(); }
+    public void storeData(String key,String val) { store.put(key,val); }
+    public String retrieve(String key) { return store.get(key); }
+    public void increment() { counter++; }
+    public void computeList() { for(int i=0;i<10;i++) list.add(i); }
+}
+
+// File: AllInOneHandlerTest.java
+import org.junit.jupiter.api.Test; import static org.junit.jupiter.api.Assertions.*;
+class AllInOneHandlerTest {
+    @Test
+    void testQueueAndStore() throws Exception {
+        AllInOneHandler h = new AllInOneHandler();
+        h.enqueue("x"); assertEquals("x", h.dequeue());
+        h.storeData("k","v"); assertEquals("v", h.retrieve("k"));
+    }
+    @Test
+    void testPrepareReady() throws Exception { AllInOneHandler h = new AllInOneHandler(); h.prepare("tmp.txt"); assertTrue(h.ready); }
+}
+
+// File: MasterHandler.java
+public class MasterHandler {
+    private java.util.List<String> tasks = new java.util.ArrayList<>();
+    private java.util.Map<String,Boolean> status = new java.util.HashMap<>();
+    private java.io.File config;
+    private java.util.Properties props = new java.util.Properties();
+    private boolean running;
+    private java.net.ServerSocket ss;
+    private java.io.BufferedReader br;
+    private java.io.BufferedWriter bw;
+    private java.time.LocalDateTime startTime;
+    private int maxTasks;
+
+    public MasterHandler() {}
+    public void loadConfig() throws Exception { props.load(new java.io.FileInputStream(config)); maxTasks=Integer.parseInt(props.getProperty("max")); }
+    public void addTask(String t) { if(tasks.size()<maxTasks) tasks.add(t); status.put(t,false); }
+    public void executeAll() { for(String t:tasks) status.put(t,true); running=true; startTime=java.time.LocalDateTime.now(); }
+    public boolean isRunning() { return running; }
+}
+
+// File: MasterHandlerTest.java
+import org.junit.jupiter.api.Test; import static org.junit.jupiter.api.Assertions.*;
+class MasterHandlerTest {
+    @Test
+    void testAddAndExecute() {
+        MasterHandler m = new MasterHandler(); m.maxTasks=2; m.addTask("a"); m.addTask("b"); m.executeAll();
+        assertTrue(m.isRunning()); assertTrue(m.status.get("a"));
+    }
+    @Test
+    void testOverload() {
+        MasterHandler m = new MasterHandler(); m.maxTasks=1; m.addTask("a"); m.addTask("b");
+        assertEquals(1, m.tasks.size());
+    }
+}
+
+// File: UnifiedController.java
+public class UnifiedController {
+    private java.util.List<String> commands = new java.util.ArrayList<>();
+    private java.util.Map<String,String> responses = new java.util.HashMap<>();
+    private java.util.Properties props = new java.util.Properties();
+    private java.io.File file;
+    private java.net.Socket sock;
+    private boolean connected;
+    private String endpoint;
+    private int timeout;
+    private java.io.BufferedReader reader;
+    private java.io.BufferedWriter writer;
+
+    public UnifiedController(String ep,int t) { this.endpoint=ep; this.timeout=t; }
+    public void connect() throws Exception { sock=new java.net.Socket(endpoint, timeout); connected=true; }
+    public String sendCommand(String cmd) throws Exception { if(!connected) connect(); writer=new java.io.BufferedWriter(new java.io.OutputStreamWriter(sock.getOutputStream())); writer.write(cmd); writer.flush(); reader=new java.io.BufferedReader(new java.io.InputStreamReader(sock.getInputStream())); return reader.readLine(); }
+    public void record(String cmd,String resp) { commands.add(cmd); responses.put(cmd,resp); }
+    public void close() throws Exception { if(sock!=null) sock.close(); connected=false; }
+}
+
+// File: UnifiedControllerTest.java
+import org.junit.jupiter.api.Test; import static org.junit.jupiter.api.Assertions.*;
+class UnifiedControllerTest {
+    @Test
+    void testRecord() {
+        UnifiedController uc = new UnifiedController("localhost",80);
+        uc.record("ping","pong"); assertEquals("pong", uc.responses.get("ping"));
+    }
+    @Test
+    void testClose() throws Exception { UnifiedController uc = new UnifiedController("localhost",80);
+        uc.connected=true; uc.close(); assertFalse(uc.connected);
+    }
+}
+
+// File: GodClassExample.java
+public class GodClassExample {
+    private java.util.List<String> listA = new java.util.ArrayList<>();
+    private java.util.List<Integer> listB = new java.util.ArrayList<>();
+    private java.util.Map<String,String> mapC = new java.util.HashMap<>();
+    private java.util.Properties p = new java.util.Properties();
+    private java.sql.Connection conn;
+    private java.net.URL url;
+    private java.io.File file;
+    private int x;
+    private boolean flag;
+    private java.util.Date date;
+    private java.io.BufferedReader br;
+
+    public void actionOne() throws Exception { }
+    public int compute(int a,int b) { return a+b; }
+    public void transform() { }
+    public void updateDB() throws Exception { conn.createStatement().execute("UPDATE T SET C=1"); }
+    public void loadFile() throws Exception { br=new java.io.BufferedReader(new java.io.FileReader(file)); }
+    public String buildMessage() { return "Value:"+x; }
+    public boolean checkFlag() { return flag; }
+    public void clearAll() { listA.clear(); listB.clear(); mapC.clear(); }
+    public void setDate(java.util.Date d) { date=d; }
+    public java.util.Date getDate() { return date; }
+}
+
+// File: GodClassExampleTest.java
+import org.junit.jupiter.api.Test; import static org.junit.jupiter.api.Assertions.*;
+class GodClassExampleTest {
+    @Test
+    void testCompute() { GodClassExample g = new GodClassExample(); assertEquals(5, g.compute(2,3)); }
+    @Test
+    void testFlagDefault() { GodClassExample g = new GodClassExample(); assertFalse(g.checkFlag()); }
+}

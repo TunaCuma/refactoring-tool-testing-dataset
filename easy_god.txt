@@ -1,0 +1,515 @@
+// File: SystemManager.java
+public class SystemManager {
+    private java.util.Map<String, String> config = new java.util.HashMap<>();
+    private java.util.List<String> logs = new java.util.ArrayList<>();
+
+    public void loadConfig(String filename) {
+        config.put("file", filename);
+        config.put("date", java.time.LocalDate.now().toString());
+    }
+
+    public void writeLog(String message) {
+        logs.add(java.time.LocalDateTime.now() + ": " + message);
+    }
+
+    public String getConfigValue(String key) {
+        writeLog("Retrieving config for key: " + key);
+        return config.getOrDefault(key, "");
+    }
+
+    public String processRequest(String request) {
+        writeLog("Processing request: " + request);
+        if (request == null || request.isEmpty()) {
+            return "Invalid request.";
+        }
+        return "Processed: " + request.toUpperCase();
+    }
+
+    public void saveData(String filename, String data) {
+        writeLog("Saving data to " + filename);
+        // Simulate saving data
+    }
+
+    public String getLogSummary() {
+        StringBuilder sb = new StringBuilder();
+        for (String log : logs) {
+            sb.append(log).append("\n");
+        }
+        return sb.toString();
+    }
+}
+
+// File: SystemManagerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class SystemManagerTest {
+    @Test
+    void testLoadAndGetConfig() {
+        SystemManager sm = new SystemManager();
+        sm.loadConfig("config.yml");
+        assertEquals("config.yml", sm.getConfigValue("file"));
+    }
+    @Test
+    void testWriteAndSummary() {
+        SystemManager sm = new SystemManager();
+        sm.writeLog("Test log");
+        assertTrue(sm.getLogSummary().contains("Test log"));
+    }
+    @Test
+    void testProcessRequest() {
+        SystemManager sm = new SystemManager();
+        assertEquals("Processed: HELLO", sm.processRequest("hello"));
+        assertEquals("Invalid request.", sm.processRequest(""));
+    }
+}
+
+// File: InventoryController.java
+public class InventoryController {
+    private java.util.Map<String, Integer> stock = new java.util.HashMap<>();
+    private java.util.List<String> notifications = new java.util.ArrayList<>();
+
+    public void addItem(String item, int quantity) {
+        stock.put(item, stock.getOrDefault(item, 0) + quantity);
+    }
+
+    public void removeItem(String item, int quantity) {
+        int current = stock.getOrDefault(item, 0);
+        if (current < quantity) {
+            notifications.add("Insufficient stock for " + item);
+        } else {
+            stock.put(item, current - quantity);
+        }
+    }
+
+    public int getStock(String item) {
+        return stock.getOrDefault(item, 0);
+    }
+
+    public void checkLowStock(int threshold) {
+        for (java.util.Map.Entry<String, Integer> entry : stock.entrySet()) {
+            if (entry.getValue() < threshold) {
+                notifications.add("Low stock: " + entry.getKey());
+            }
+        }
+    }
+
+    public java.util.List<String> getNotifications() {
+        return notifications;
+    }
+}
+
+// File: InventoryControllerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class InventoryControllerTest {
+    @Test
+    void testAddAndGetStock() {
+        InventoryController ic = new InventoryController();
+        ic.addItem("apple", 10);
+        assertEquals(10, ic.getStock("apple"));
+    }
+    @Test
+    void testRemoveAndNotify() {
+        InventoryController ic = new InventoryController();
+        ic.addItem("banana", 5);
+        ic.removeItem("banana", 10);
+        assertTrue(ic.getNotifications().contains("Insufficient stock for banana"));
+    }
+}
+
+// File: UserService.java
+public class UserService {
+    private java.util.Map<String, String> users = new java.util.HashMap<>();
+    private java.util.Set<String> activeUsers = new java.util.HashSet<>();
+
+    public void registerUser(String username, String password) {
+        users.put(username, password);
+    }
+
+    public boolean authenticate(String username, String password) {
+        if (!users.containsKey(username)) return false;
+        boolean ok = users.get(username).equals(password);
+        if (ok) activeUsers.add(username);
+        return ok;
+    }
+
+    public void deactivateUser(String username) {
+        activeUsers.remove(username);
+        users.remove(username);
+    }
+
+    public boolean isActive(String username) {
+        return activeUsers.contains(username);
+    }
+}
+
+// File: UserServiceTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class UserServiceTest {
+    @Test
+    void testRegisterAndAuthenticate() {
+        UserService us = new UserService();
+        us.registerUser("john", "pass");
+        assertTrue(us.authenticate("john", "pass"));
+    }
+    @Test
+    void testDeactivate() {
+        UserService us = new UserService();
+        us.registerUser("jane", "123");
+        us.authenticate("jane", "123");
+        us.deactivateUser("jane");
+        assertFalse(us.isActive("jane"));
+    }
+}
+
+// File: PaymentHandler.java
+public class PaymentHandler {
+    private java.util.Map<String, String> payments = new java.util.HashMap<>();
+
+    public String initiatePayment(String account, double amount) {
+        String id = java.util.UUID.randomUUID().toString();
+        payments.put(id, "PENDING");
+        return id;
+    }
+
+    public boolean validatePayment(String paymentId) {
+        String status = payments.get(paymentId);
+        if ("PENDING".equals(status)) {
+            payments.put(paymentId, "COMPLETED");
+            return true;
+        }
+        return false;
+    }
+
+    public boolean refund(String paymentId) {
+        if ("COMPLETED".equals(payments.get(paymentId))) {
+            payments.put(paymentId, "REFUNDED");
+            return true;
+        }
+        return false;
+    }
+
+    public String getPaymentStatus(String paymentId) {
+        return payments.getOrDefault(paymentId, "UNKNOWN");
+    }
+}
+
+// File: PaymentHandlerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class PaymentHandlerTest {
+    @Test
+    void testInitiateAndStatus() {
+        PaymentHandler ph = new PaymentHandler();
+        String id = ph.initiatePayment("acct1", 50.0);
+        assertEquals("PENDING", ph.getPaymentStatus(id));
+    }
+    @Test
+    void testValidateAndRefund() {
+        PaymentHandler ph = new PaymentHandler();
+        String id = ph.initiatePayment("acct2", 75.0);
+        assertTrue(ph.validatePayment(id));
+        assertTrue(ph.refund(id));
+        assertEquals("REFUNDED", ph.getPaymentStatus(id));
+    }
+}
+
+// File: NotificationManager.java
+public class NotificationManager {
+    private java.util.List<String> sent = new java.util.ArrayList<>();
+
+    public void sendEmail(String email, String message) {
+        sent.add("EMAIL:" + email + ":" + message);
+    }
+
+    public void sendSMS(String number, String message) {
+        sent.add("SMS:" + number + ":" + message);
+    }
+
+    public void scheduleNotification(String id, java.time.LocalDateTime time) {
+        sent.add("SCHEDULED:" + id + "@" + time);
+    }
+
+    public void cancelNotification(String id) {
+        sent.removeIf(s -> s.contains(id));
+    }
+
+    public java.util.List<String> getSent() {
+        return sent;
+    }
+}
+
+// File: NotificationManagerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class NotificationManagerTest {
+    @Test
+    void testSendEmailAndSMS() {
+        NotificationManager nm = new NotificationManager();
+        nm.sendEmail("a@b.com", "hi");
+        nm.sendSMS("12345", "hello");
+        assertTrue(nm.getSent().stream().anyMatch(s -> s.startsWith("EMAIL:")));
+    }
+    @Test
+    void testScheduleAndCancel() {
+        NotificationManager nm = new NotificationManager();
+        nm.scheduleNotification("n1", java.time.LocalDateTime.now());
+        nm.cancelNotification("n1");
+        assertFalse(nm.getSent().stream().anyMatch(s -> s.contains("n1")));
+    }
+}
+
+// File: FileManager.java
+public class FileManager {
+    public String readFile(String path) {
+        writeLog("READ:" + path);
+        return "file content";
+    }
+
+    public void writeFile(String path, String content) {
+        writeLog("WRITE:" + path);
+    }
+
+    public void deleteFile(String path) {
+        writeLog("DELETE:" + path);
+    }
+
+    public void copyFile(String src, String dest) {
+        writeLog("COPY:" + src + "->" + dest);
+    }
+
+    private java.util.List<String> history = new java.util.ArrayList<>();
+    private void writeLog(String entry) {
+        history.add(entry);
+    }
+    public java.util.List<String> getHistory() {
+        return history;
+    }
+}
+
+// File: FileManagerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class FileManagerTest {
+    @Test
+    void testReadAndWriteHistory() {
+        FileManager fm = new FileManager();
+        fm.readFile("/tmp/a.txt");
+        fm.writeFile("/tmp/a.txt", "hi");
+        assertEquals(2, fm.getHistory().size());
+    }
+    @Test
+    void testCopyAndDelete() {
+        FileManager fm = new FileManager();
+        fm.copyFile("/a", "/b");
+        fm.deleteFile("/b");
+        assertTrue(fm.getHistory().stream().anyMatch(h -> h.startsWith("COPY:")));
+    }
+}
+
+// File: DatabaseFacade.java
+public class DatabaseFacade {
+    private boolean connected = false;
+
+    public void connect(String url) {
+        connected = true;
+    }
+
+    public void disconnect() {
+        connected = false;
+    }
+
+    public java.util.List<java.util.Map<String, Object>> executeQuery(String sql) {
+        return new java.util.ArrayList<>();
+    }
+
+    public void beginTransaction() {
+        writeLog("BEGIN");
+    }
+
+    public void commitTransaction() {
+        writeLog("COMMIT");
+    }
+
+    private java.util.List<String> logs = new java.util.ArrayList<>();
+    private void writeLog(String msg) {
+        logs.add(msg);
+    }
+    public java.util.List<String> getLogs() {
+        return logs;
+    }
+}
+
+// File: DatabaseFacadeTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class DatabaseFacadeTest {
+    @Test
+    void testConnectDisconnect() {
+        DatabaseFacade db = new DatabaseFacade();
+        db.connect("url");
+        db.disconnect();
+        assertFalse(db.getLogs().isEmpty() || db.getLogs().contains("COMMIT"));
+    }
+    @Test
+    void testTransactionLogs() {
+        DatabaseFacade db = new DatabaseFacade();
+        db.beginTransaction();
+        db.commitTransaction();
+        assertTrue(db.getLogs().contains("BEGIN"));
+        assertTrue(db.getLogs().contains("COMMIT"));
+    }
+}
+
+// File: ApplicationController.java
+public class ApplicationController {
+    private boolean running = false;
+
+    public void startApp() {
+        running = true;
+    }
+
+    public void stopApp() {
+        running = false;
+    }
+
+    public void restartApp() {
+        stopApp();
+        startApp();
+    }
+
+    public String getStatus() {
+        return running ? "RUNNING" : "STOPPED";
+    }
+
+    public void shutdown() {
+        running = false;
+        writeLog("SHUTDOWN");
+    }
+
+    private java.util.List<String> logs = new java.util.ArrayList<>();
+    private void writeLog(String msg) {
+        logs.add(msg);
+    }
+    public java.util.List<String> getLogs() {
+        return logs;
+    }
+}
+
+// File: ApplicationControllerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class ApplicationControllerTest {
+    @Test
+    void testStartStop() {
+        ApplicationController ac = new ApplicationController();
+        ac.startApp();
+        assertEquals("RUNNING", ac.getStatus());
+        ac.stopApp();
+        assertEquals("STOPPED", ac.getStatus());
+    }
+    @Test
+    void testRestartAndShutdown() {
+        ApplicationController ac = new ApplicationController();
+        ac.startApp();
+        ac.restartApp();
+        assertEquals("RUNNING", ac.getStatus());
+        ac.shutdown();
+        assertTrue(ac.getLogs().contains("SHUTDOWN"));
+    }
+}
+
+// File: AnalyticsEngine.java
+public class AnalyticsEngine {
+    private java.util.List<Double> data = new java.util.ArrayList<>();
+
+    public void collectData(double value) {
+        data.add(value);
+    }
+
+    public double analyze() {
+        return data.stream().mapToDouble(d -> d).average().orElse(0);
+    }
+
+    public String generateReport() {
+        double avg = analyze();
+        return "Average: " + avg;
+    }
+
+    public void exportResults(String format) {
+        writeLog("Export to " + format);
+    }
+
+    private java.util.List<String> logs = new java.util.ArrayList<>();
+    private void writeLog(String msg) {
+        logs.add(msg);
+    }
+    public java.util.List<String> getLogs() {
+        return logs;
+    }
+}
+
+// File: AnalyticsEngineTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class AnalyticsEngineTest {
+    @Test
+    void testCollectAndAnalyze() {
+        AnalyticsEngine ae = new AnalyticsEngine();
+        ae.collectData(10);
+        ae.collectData(20);
+        assertEquals(15.0, ae.analyze());
+    }
+    @Test
+    void testGenerateAndExport() {
+        AnalyticsEngine ae = new AnalyticsEngine();
+        ae.collectData(5);
+        String rpt = ae.generateReport();
+        assertTrue(rpt.contains("Average:"));
+        ae.exportResults("CSV");
+        assertTrue(ae.getLogs().contains("Export to CSV"));
+    }
+}
+
+// File: SessionManager.java
+public class SessionManager {
+    private java.util.Map<String, java.time.LocalDateTime> sessions = new java.util.HashMap<>();
+
+    public String createSession(String user) {
+        String id = java.util.UUID.randomUUID().toString();
+        sessions.put(id, java.time.LocalDateTime.now());
+        return id;
+    }
+
+    public boolean validateSession(String sessionId) {
+        return sessions.containsKey(sessionId);
+    }
+
+    public void invalidateSession(String sessionId) {
+        sessions.remove(sessionId);
+    }
+
+    public java.time.LocalDateTime getSessionInfo(String sessionId) {
+        return sessions.get(sessionId);
+    }
+}
+
+// File: SessionManagerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class SessionManagerTest {
+    @Test
+    void testCreateAndValidate() {
+        SessionManager sm = new SessionManager();
+        String id = sm.createSession("user1");
+        assertTrue(sm.validateSession(id));
+    }
+    @Test
+    void testInvalidate() {
+        SessionManager sm = new SessionManager();
+        String id = sm.createSession("user2");
+        sm.invalidateSession(id);
+        assertFalse(sm.validateSession(id));
+    }
+}

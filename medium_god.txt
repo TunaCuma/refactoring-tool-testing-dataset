@@ -1,0 +1,541 @@
+/*
+ * Medium Difficulty God Object Criteria:
+ * - Multiple responsibilities in one class (business logic, persistence, formatting).
+ * - Moderate size: 8-12 methods each.
+ * - Uses at least one external dependency or system API (JDBC, Gson).
+ * - Contains logic that should be extracted into helper classes.
+ */
+
+import java.util.*;
+import java.sql.*;
+import com.google.gson.Gson;
+
+// File: CustomerManager.java
+public class CustomerManager {
+    private List<String> customers = new ArrayList<>();
+    private Connection connection;
+
+    public CustomerManager() {
+        try {
+            connection = DriverManager.getConnection("jdbc:h2:mem:testdb");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void addCustomer(String name) {
+        if (name == null || name.isBlank()) throw new IllegalArgumentException("Invalid name");
+        customers.add(name);
+        saveToDatabase(name);
+        sendWelcomeEmail(name);
+    }
+
+    public int getCustomerCount() {
+        return customers.size();
+    }
+
+    private void saveToDatabase(String name) {
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute("INSERT INTO CUSTOMERS(NAME) VALUES('" + name + "')");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sendWelcomeEmail(String name) {
+        System.out.println("Welcome email sent to " + name);
+    }
+}
+
+// File: CustomerManagerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class CustomerManagerTest {
+    @Test
+    void testAddCustomerValid() {
+        CustomerManager mgr = new CustomerManager();
+        mgr.addCustomer("Alice");
+        assertEquals(1, mgr.getCustomerCount());
+    }
+
+    @Test
+    void testAddCustomerInvalid() {
+        CustomerManager mgr = new CustomerManager();
+        assertThrows(IllegalArgumentException.class, () -> mgr.addCustomer(""));
+    }
+}
+
+// File: OrderService.java
+public class OrderService {
+    private double totalRevenue = 0;
+    private Connection connection;
+
+    public OrderService() {
+        try {
+            connection = DriverManager.getConnection("jdbc:h2:mem:testdb");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void placeOrder(int orderId, double amount) {
+        validateOrder(orderId, amount);
+        processPayment(amount);
+        recordOrder(orderId, amount);
+        totalRevenue += amount;
+        sendConfirmation(orderId);
+    }
+
+    public double getTotalRevenue() {
+        return totalRevenue;
+    }
+
+    private void validateOrder(int id, double amt) {
+        if (id <= 0 || amt <= 0) throw new IllegalArgumentException("Invalid order parameters");
+    }
+
+    private void processPayment(double amt) {
+        System.out.println("Processed payment: " + amt);
+    }
+
+    private void recordOrder(int id, double amt) {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "INSERT INTO ORDERS(ID,AMOUNT) VALUES(?,?)")) {
+            ps.setInt(1, id);
+            ps.setDouble(2, amt);
+            ps.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sendConfirmation(int id) {
+        System.out.println("Order " + id + " confirmed.");
+    }
+}
+
+// File: OrderServiceTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class OrderServiceTest {
+    @Test
+    void testPlaceOrderValid() {
+        OrderService svc = new OrderService();
+        svc.placeOrder(1, 100.0);
+        assertEquals(100.0, svc.getTotalRevenue());
+    }
+
+    @Test
+    void testPlaceOrderInvalid() {
+        OrderService svc = new OrderService();
+        assertThrows(IllegalArgumentException.class, () -> svc.placeOrder(0, -5));
+    }
+}
+
+// File: InventoryManager.java
+public class InventoryManager {
+    private Map<String, Integer> stock = new HashMap<>();
+    private Connection connection;
+
+    public InventoryManager() {
+        try {
+            connection = DriverManager.getConnection("jdbc:h2:mem:testdb");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void addProduct(String sku, int quantity) {
+        if (sku == null || sku.isBlank() || quantity <= 0) throw new IllegalArgumentException();
+        stock.put(sku, stock.getOrDefault(sku, 0) + quantity);
+        updateDatabase(sku, stock.get(sku));
+        if (stock.get(sku) < 5) sendRestockAlert(sku);
+    }
+
+    public int getStock(String sku) {
+        return stock.getOrDefault(sku, 0);
+    }
+
+    private void updateDatabase(String sku, int qty) {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "MERGE INTO INVENTORY(SKU,QT) KEY(SKU) VALUES(?,?)")) {
+            ps.setString(1, sku);
+            ps.setInt(2, qty);
+            ps.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sendRestockAlert(String sku) {
+        System.out.println("Alert: Low stock for " + sku);
+    }
+}
+
+// File: InventoryManagerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class InventoryManagerTest {
+    @Test
+    void testAddProductNormal() {
+        InventoryManager inv = new InventoryManager();
+        inv.addProduct("SKU1", 10);
+        assertEquals(10, inv.getStock("SKU1"));
+    }
+
+    @Test
+    void testAddProductInvalid() {
+        InventoryManager inv = new InventoryManager();
+        assertThrows(IllegalArgumentException.class, () -> inv.addProduct("", 0));
+    }
+}
+
+// File: AnalyticsDashboard.java
+public class AnalyticsDashboard {
+    private Gson gson = new Gson();
+    private Connection connection;
+
+    public AnalyticsDashboard() {
+        try {
+            connection = DriverManager.getConnection("jdbc:h2:mem:testdb");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String generateUserReport() {
+        List<String> users = fetchUsers();
+        Map<String, Integer> data = analyze(users);
+        return gson.toJson(data);
+    }
+
+    private List<String> fetchUsers() {
+        List<String> list = new ArrayList<>();
+        try (ResultSet rs = connection.createStatement().executeQuery("SELECT NAME FROM CUSTOMERS")) {
+            while (rs.next()) list.add(rs.getString("NAME"));
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    private Map<String, Integer> analyze(List<String> users) {
+        Map<String, Integer> counts = new HashMap<>();
+        for (String u : users) counts.put(u, counts.getOrDefault(u, 0) + 1);
+        return counts;
+    }
+}
+
+// File: AnalyticsDashboardTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class AnalyticsDashboardTest {
+    @Test
+    void testGenerateUserReportEmpty() {
+        AnalyticsDashboard dash = new AnalyticsDashboard();
+        String json = dash.generateUserReport();
+        assertTrue(json.contains("{}"));
+    }
+}
+
+// File: PaymentProcessor.java
+public class PaymentProcessor {
+    private Connection connection;
+    private Gson gson = new Gson();
+
+    public PaymentProcessor() {
+        try {
+            connection = DriverManager.getConnection("jdbc:h2:mem:testdb");
+        } catch (SQLException e) { throw new RuntimeException(e); }
+    }
+
+    public String process(double amount, String method) {
+        if (amount <= 0) throw new IllegalArgumentException();
+        String txn = recordTransaction(amount, method);
+        return gson.toJson(Map.of("status", "ok", "txn", txn));
+    }
+
+    private String recordTransaction(double amt, String m) {
+        String id = UUID.randomUUID().toString();
+        try (PreparedStatement ps = connection.prepareStatement(
+                "INSERT INTO TRANSACTIONS(ID,AMT,METHOD) VALUES(?,?,?)")) {
+            ps.setString(1, id);
+            ps.setDouble(2, amt);
+            ps.setString(3, m);
+            ps.execute();
+        } catch (SQLException e) { e.printStackTrace(); }
+        return id;
+    }
+}
+
+// File: PaymentProcessorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class PaymentProcessorTest {
+    @Test
+    void testProcessValid() {
+        PaymentProcessor pp = new PaymentProcessor();
+        String res = pp.process(50.0, "card");
+        assertTrue(res.contains("\"status\":\"ok\""));
+    }
+
+    @Test
+    void testProcessInvalid() {
+        PaymentProcessor pp = new PaymentProcessor();
+        assertThrows(IllegalArgumentException.class, () -> pp.process(0, "card"));
+    }
+}
+
+// File: ProductCatalog.java
+public class ProductCatalog {
+    private List<String> products = new ArrayList<>();
+    private Connection connection;
+
+    public ProductCatalog() {
+        try { connection = DriverManager.getConnection("jdbc:h2:mem:testdb"); }
+        catch (SQLException e) { throw new RuntimeException(e); }
+    }
+
+    public void loadProducts() {
+        products.clear();
+        try (ResultSet rs = connection.createStatement().executeQuery("SELECT NAME FROM PRODUCTS")) {
+            while (rs.next()) products.add(rs.getString("NAME"));
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    public List<String> search(String keyword) {
+        List<String> res = new ArrayList<>();
+        for (String p : products) if (p.contains(keyword)) res.add(p);
+        return res;
+    }
+}
+
+// File: ProductCatalogTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class ProductCatalogTest {
+    @Test
+    void testSearchEmpty() {
+        ProductCatalog pc = new ProductCatalog();
+        pc.loadProducts();
+        assertTrue(pc.search("x").isEmpty());
+    }
+}
+
+// File: UserProfileManager.java
+public class UserProfileManager {
+    private Map<String, String> profiles = new HashMap<>();
+
+    public void updateProfile(String user, String data) {
+        validate(user, data);
+        encryptData(data);
+        profiles.put(user, data);
+        logChange(user);
+    }
+
+    public String getProfile(String user) {
+        return profiles.get(user);
+    }
+
+    private void validate(String u, String d) {
+        if (u == null || d == null) throw new IllegalArgumentException();
+    }
+
+    private void encryptData(String d) {
+        System.out.println("Encrypting data");
+    }
+
+    private void logChange(String u) {
+        System.out.println("Profile updated for " + u);
+    }
+}
+
+// File: UserProfileManagerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class UserProfileManagerTest {
+    @Test
+    void testUpdateProfileValid() {
+        UserProfileManager upm = new UserProfileManager();
+        upm.updateProfile("user1", "data");
+        assertEquals("data", upm.getProfile("user1"));
+    }
+
+    @Test
+    void testUpdateProfileInvalid() {
+        UserProfileManager upm = new UserProfileManager();
+        assertThrows(IllegalArgumentException.class, () -> upm.updateProfile(null, null));
+    }
+}
+
+// File: ShipmentController.java
+public class ShipmentController {
+    private Connection connection;
+
+    public ShipmentController() {
+        try { connection = DriverManager.getConnection("jdbc:h2:mem:testdb"); }
+        catch (SQLException e) { throw new RuntimeException(e); }
+    }
+
+    public void shipOrder(int orderId, String address) {
+        if (orderId <= 0 || address.isBlank()) throw new IllegalArgumentException();
+        createShippingLabel(orderId, address);
+        updateShipmentStatus(orderId);
+        notifyCustomer(orderId);
+    }
+
+    private void createShippingLabel(int id, String addr) {
+        System.out.println("Label created for " + id + " to " + addr);
+    }
+
+    private void updateShipmentStatus(int id) {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "INSERT INTO SHIPMENTS(ID,STATUS) VALUES(?, 'SHIPPED')")) {
+            ps.setInt(1, id);
+            ps.execute();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    private void notifyCustomer(int id) {
+        System.out.println("Customer notified for shipment " + id);
+    }
+}
+
+// File: ShipmentControllerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class ShipmentControllerTest {
+    @Test
+    void testShipOrderValid() {
+        ShipmentController sc = new ShipmentController();
+        assertDoesNotThrow(() -> sc.shipOrder(1, "123 Main St"));
+    }
+
+    @Test
+    void testShipOrderInvalid() {
+        ShipmentController sc = new ShipmentController();
+        assertThrows(IllegalArgumentException.class, () -> sc.shipOrder(0, ""));
+    }
+}
+
+// File: ReportFormatter.java
+public class ReportFormatter {
+    private Connection connection;
+    private Gson gson = new Gson();
+
+    public ReportFormatter() {
+        try { connection = DriverManager.getConnection("jdbc:h2:mem:testdb"); }
+        catch (SQLException e) { throw new RuntimeException(e); }
+    }
+
+    public String formatMonthlyReport(int month) {
+        validateMonth(month);
+        List<Map<String, Object>> data = fetchData(month);
+        String csv = convertToCSV(data);
+        saveReport(csv);
+        return csv;
+    }
+
+    private void validateMonth(int m) {
+        if (m < 1 || m > 12) throw new IllegalArgumentException("Invalid month");
+    }
+
+    private List<Map<String, Object>> fetchData(int month) {
+        List<Map<String, Object>> list = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement(
+                "SELECT NAME,VALUE FROM REPORTS WHERE MONTH=" + month)) {
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Map<String, Object> row = new HashMap<>();
+                row.put("name", rs.getString("NAME"));
+                row.put("value", rs.getInt("VALUE"));
+                list.add(row);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
+    }
+
+    private String convertToCSV(List<Map<String, Object>> data) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Name,Value\n");
+        for (Map<String, Object> row : data) {
+            sb.append(row.get("name")).append(",").append(row.get("value")).append("\n");
+        }
+        return sb.toString();
+    }
+
+    private void saveReport(String csv) {
+        System.out.println("Report saved: " + csv.length() + " chars");
+    }
+}
+
+// File: ReportFormatterTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class ReportFormatterTest {
+    @Test
+    void testFormatMonthlyReportEmpty() {
+        ReportFormatter rf = new ReportFormatter();
+        String csv = rf.formatMonthlyReport(1);
+        assertTrue(csv.startsWith("Name,Value"));
+    }
+
+    @Test
+    void testFormatMonthlyReportInvalidMonth() {
+        ReportFormatter rf = new ReportFormatter();
+        assertThrows(IllegalArgumentException.class, () -> rf.formatMonthlyReport(13));
+    }
+}
+
+// File: NotificationManager.java
+public class NotificationManager {
+    private Connection connection;
+
+    public NotificationManager() {
+        try { connection = DriverManager.getConnection("jdbc:h2:mem:testdb"); }
+        catch (SQLException e) { throw new RuntimeException(e); }
+    }
+
+    public void notifyUsers(List<String> users, String message) {
+        for (String user : users) {
+            sendPushNotification(user, message);
+            logNotification(user, message);
+            saveNotificationRecord(user, message);
+        }
+    }
+
+    private void sendPushNotification(String user, String msg) {
+        System.out.println("Push sent to " + user + ": " + msg);
+    }
+
+    private void logNotification(String user, String msg) {
+        System.out.println("Logged notification for " + user);
+    }
+
+    private void saveNotificationRecord(String user, String msg) {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "INSERT INTO NOTIFICATIONS(USER,MESSAGE) VALUES(?,?)")) {
+            ps.setString(1, user);
+            ps.setString(2, msg);
+            ps.execute();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+}
+
+// File: NotificationManagerTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class NotificationManagerTest {
+    @Test
+    void testNotifyUsersEmptyList() {
+        NotificationManager nm = new NotificationManager();
+        nm.notifyUsers(Collections.emptyList(), "Hello");
+        assertTrue(true);
+    }
+
+    @Test
+    void testNotifyUsersNullMessage() {
+        NotificationManager nm = new NotificationManager();
+        assertThrows(NullPointerException.class, () -> nm.notifyUsers(List.of("u1"), null));
+    }
+}
