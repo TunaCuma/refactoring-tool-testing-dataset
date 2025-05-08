@@ -1,0 +1,313 @@
+// File: ShippingCalculator.java
+public class ShippingCalculator {
+    public double calculateShipping(String type, double weight) {
+        if ("STANDARD".equals(type)) {
+            return weight * 1.0;
+        } else if ("EXPRESS".equals(type)) {
+            return weight * 2.0 + 5;
+        } else if ("OVERNIGHT".equals(type)) {
+            return weight * 3.0 + 20;
+        }
+        throw new IllegalArgumentException("Unknown shipping type: " + type);
+    }
+}
+
+// File: ShippingCalculatorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class ShippingCalculatorTest {
+    @Test
+    void testStandardShipping() {
+        ShippingCalculator calc = new ShippingCalculator();
+        assertEquals(10.0, calc.calculateShipping("STANDARD", 10));
+    }
+    @Test
+    void testUnknownShippingType() {
+        ShippingCalculator calc = new ShippingCalculator();
+        assertThrows(IllegalArgumentException.class, () -> calc.calculateShipping("UNKNOWN", 5));
+    }
+}
+
+// File: PaymentProcessor.java
+public class PaymentProcessor {
+    public String processPayment(String method, double amount) {
+        if ("CREDIT_CARD".equals(method)) {
+            return "Processed credit card: $" + amount;
+        } else if ("PAYPAL".equals(method)) {
+            return "Processed PayPal: $" + amount + " with fee $" + (amount * 0.03);
+        } else if ("BITCOIN".equals(method)) {
+            return "Processed Bitcoin: ฿" + (amount / 50000);
+        }
+        throw new UnsupportedOperationException("Payment method not supported: " + method);
+    }
+}
+
+// File: PaymentProcessorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class PaymentProcessorTest {
+    @Test
+    void testCreditCard() {
+        PaymentProcessor proc = new PaymentProcessor();
+        assertTrue(proc.processPayment("CREDIT_CARD", 100).startsWith("Processed credit card"));
+    }
+    @Test
+    void testUnsupportedMethod() {
+        PaymentProcessor proc = new PaymentProcessor();
+        assertThrows(UnsupportedOperationException.class, () -> proc.processPayment("CASH", 50));
+    }
+}
+
+// File: ReportFormatter.java
+public class ReportFormatter {
+    public String formatReport(String type, String content) {
+        if ("HTML".equals(type)) {
+            return "<html><body>" + content + "</body></html>";
+        } else if ("XML".equals(type)) {
+            return "<report>" + content + "</report>";
+        } else if ("JSON".equals(type)) {
+            return "{ \"report\": \"" + content + "\" }";
+        }
+        return content;
+    }
+}
+
+// File: ReportFormatterTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class ReportFormatterTest {
+    @Test
+    void testJsonFormat() {
+        ReportFormatter fmt = new ReportFormatter();
+        assertEquals("{ \"report\": \"data\" }", fmt.formatReport("JSON", "data"));
+    }
+    @Test
+    void testPlainFormat() {
+        ReportFormatter fmt = new ReportFormatter();
+        assertEquals("plain", fmt.formatReport("PLAINTEXT", "plain"));
+    }
+}
+
+// File: DiscountService.java
+public class DiscountService {
+    public double applyDiscount(String customerType, double price) {
+        if ("REGULAR".equals(customerType)) {
+            return price * 0.95;
+        } else if ("GOLD".equals(customerType)) {
+            return price * 0.90;
+        } else if ("PLATINUM".equals(customerType)) {
+            return price * 0.85;
+        }
+        return price;
+    }
+}
+
+// File: DiscountServiceTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class DiscountServiceTest {
+    @Test
+    void testGoldDiscount() {
+        DiscountService ds = new DiscountService();
+        assertEquals(90.0, ds.applyDiscount("GOLD", 100));
+    }
+    @Test
+    void testNoDiscount() {
+        DiscountService ds = new DiscountService();
+        assertEquals(100.0, ds.applyDiscount("UNKNOWN", 100));
+    }
+}
+
+// File: NotificationSender.java
+public class NotificationSender {
+    public String send(String channel, String message) {
+        if ("EMAIL".equals(channel)) {
+            return "Email sent: " + message;
+        } else if ("SMS".equals(channel)) {
+            return "SMS sent: " + message;
+        } else if ("PUSH".equals(channel)) {
+            return "Push notification: " + message;
+        }
+        throw new RuntimeException("Channel not supported: " + channel);
+    }
+}
+
+// File: NotificationSenderTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class NotificationSenderTest {
+    @Test
+    void testEmailChannel() {
+        NotificationSender sender = new NotificationSender();
+        assertTrue(sender.send("EMAIL", "Hello").contains("Email sent"));
+    }
+    @Test
+    void testInvalidChannel() {
+        NotificationSender sender = new NotificationSender();
+        assertThrows(RuntimeException.class, () -> sender.send("FAX", "Hi"));
+    }
+}
+
+// File: DataExporter.java
+public class DataExporter {
+    public String export(String format, Object data) {
+        if ("CSV".equals(format)) {
+            return "csv:" + data.toString();
+        } else if ("XML".equals(format)) {
+            return "<data>" + data + "</data>";
+        } else if ("JSON".equals(format)) {
+            return "{\"data\":\"" + data + "\"}";
+        }
+        throw new IllegalArgumentException("Format not supported: " + format);
+    }
+}
+
+// File: DataExporterTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class DataExporterTest {
+    @Test
+    void testCsvExport() {
+        DataExporter exp = new DataExporter();
+        assertEquals("csv:data", exp.export("CSV", "data"));
+    }
+    @Test
+    void testUnsupportedExport() {
+        DataExporter exp = new DataExporter();
+        assertThrows(IllegalArgumentException.class, () -> exp.export("YAML", "data"));
+    }
+}
+
+// File: TaxCalculator.java
+public class TaxCalculator {
+    public double calculate(String region, double income) {
+        if ("US".equals(region)) {
+            return income * 0.30;
+        } else if ("EU".equals(region)) {
+            return income * 0.25;
+        } else if ("ASIA".equals(region)) {
+            return income * 0.20;
+        }
+        throw new IllegalStateException("Region not recognized: " + region);
+    }
+}
+
+// File: TaxCalculatorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class TaxCalculatorTest {
+    @Test
+    void testEuropeTax() {
+        TaxCalculator tc = new TaxCalculator();
+        assertEquals(25.0, tc.calculate("EU", 100));
+    }
+    @Test
+    void testUnknownRegion() {
+        TaxCalculator tc = new TaxCalculator();
+        assertThrows(IllegalStateException.class, () -> tc.calculate("AFRICA", 100));
+    }
+}
+
+// File: CompressionService.java
+public class CompressionService {
+    public byte[] compress(String algorithm, byte[] data) {
+        if ("ZIP".equals(algorithm)) {
+            return new byte[data.length];
+        } else if ("RAR".equals(algorithm)) {
+            return new byte[data.length + 10];
+        } else if ("TAR".equals(algorithm)) {
+            return new byte[data.length + 5];
+        }
+        throw new UnsupportedOperationException("Algorithm not supported: " + algorithm);
+    }
+}
+
+// File: CompressionServiceTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class CompressionServiceTest {
+    @Test
+    void testZipCompression() {
+        CompressionService cs = new CompressionService();
+        byte[] dummy = {1,2,3};
+        assertEquals(3, cs.compress("ZIP", dummy).length);
+    }
+    @Test
+    void testUnsupportedAlgorithm() {
+        CompressionService cs = new CompressionService();
+        assertThrows(UnsupportedOperationException.class, () -> cs.compress("GZIP", new byte[0]));
+    }
+}
+
+// File: SortingService.java
+public class SortingService {
+    public int[] sort(String algorithm, int[] data) {
+        if ("BUBBLE".equals(algorithm)) {
+            for (int i = 0; i < data.length; i++) {
+                for (int j = 0; j < data.length - 1; j++) {
+                    if (data[j] > data[j+1]) {
+                        int tmp = data[j]; data[j] = data[j+1]; data[j+1] = tmp;
+                    }
+                }
+            }
+            return data;
+        } else if ("QUICK".equals(algorithm)) {
+            // simplified quick sort imitation
+            java.util.Arrays.sort(data);
+            return data;
+        } else if ("MERGE".equals(algorithm)) {
+            // fake merge for example
+            java.util.Arrays.sort(data);
+            return data;
+        }
+        return data;
+    }
+}
+
+// File: SortingServiceTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class SortingServiceTest {
+    @Test
+    void testBubbleSort() {
+        SortingService ss = new SortingService();
+        int[] data = {3,1,2};
+        assertArrayEquals(new int[]{1,2,3}, ss.sort("BUBBLE", data));
+    }
+    @Test
+    void testDefaultSort() {
+        SortingService ss = new SortingService();
+        int[] data = {2,1};
+        assertArrayEquals(new int[]{1,2}, ss.sort("UNKNOWN", data));
+    }
+}
+
+// File: DocumentRenderer.java
+public class DocumentRenderer {
+    public String render(String format, String text) {
+        if ("PDF".equals(format)) {
+            return "[PDF] " + text;
+        } else if ("HTML".equals(format)) {
+            return "<p>" + text + "</p>";
+        } else if ("DOCX".equals(format)) {
+            return "<w:docx>" + text + "</w:docx>";
+        }
+        throw new IllegalArgumentException("Unsupported format: " + format);
+    }
+}
+
+// File: DocumentRendererTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class DocumentRendererTest {
+    @Test
+    void testHtmlRender() {
+        DocumentRenderer dr = new DocumentRenderer();
+        assertEquals("<p>Hello</p>", dr.render("HTML", "Hello"));
+    }
+    @Test
+    void testRenderException() {
+        DocumentRenderer dr = new DocumentRenderer();
+        assertThrows(IllegalArgumentException.class, () -> dr.render("TXT", "Hi"));
+    }
+}

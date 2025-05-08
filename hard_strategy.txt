@@ -1,0 +1,341 @@
+// File: PaymentProcessor.java
+public class PaymentProcessor {
+    public void processPayment(String type, double amount) {
+        if (type.equals("CREDIT_CARD")) {
+            // authenticate
+            System.out.println("Authenticating credit card");
+            // charge
+            System.out.println("Charging credit card: " + amount);
+            // send receipt
+            System.out.println("Sending credit card receipt");
+        } else if (type.equals("PAYPAL")) {
+            System.out.println("Logging into PayPal");
+            System.out.println("Transferring via PayPal: " + amount);
+            System.out.println("Emailing PayPal receipt");
+        } else if (type.equals("BITCOIN")) {
+            System.out.println("Connecting to Bitcoin network");
+            System.out.println("Transferring BTC: " + amount);
+            System.out.println("Generating blockchain receipt");
+        } else {
+            System.out.println("Unsupported payment type: " + type);
+        }
+    }
+}
+
+// File: PaymentProcessorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class PaymentProcessorTest {
+    @Test
+    void testCreditCard() {
+        PaymentProcessor proc = new PaymentProcessor();
+        assertDoesNotThrow(() -> proc.processPayment("CREDIT_CARD", 100.0));
+    }
+    @Test
+    void testUnknown() {
+        PaymentProcessor proc = new PaymentProcessor();
+        assertDoesNotThrow(() -> proc.processPayment("CASH", 50.0));
+    }
+}
+
+// File: ShippingCalculator.java
+public class ShippingCalculator {
+    public double calculate(String region, double weight) {
+        if (region.equals("DOMESTIC")) {
+            if (weight < 5) return 5.0;
+            else if (weight < 20) return 10.0;
+            else return 20.0;
+        } else if (region.equals("INTERNATIONAL")) {
+            if (weight < 5) return 15.0;
+            else if (weight < 20) return 30.0;
+            else return 50.0;
+        } else if (region.equals("EXPRESS")) {
+            if (weight < 5) return 25.0;
+            else if (weight < 20) return 50.0;
+            else return 100.0;
+        }
+        return -1;
+    }
+}
+
+// File: ShippingCalculatorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class ShippingCalculatorTest {
+    @Test
+    void testDomesticUnder5() {
+        ShippingCalculator calc = new ShippingCalculator();
+        assertEquals(5.0, calc.calculate("DOMESTIC", 3.0));
+    }
+    @Test
+    void testExpressOver20() {
+        ShippingCalculator calc = new ShippingCalculator();
+        assertEquals(100.0, calc.calculate("EXPRESS", 25.0));
+    }
+}
+
+// File: ReportExporter.java
+public class ReportExporter {
+    public void export(String format, Object data) {
+        if (format.equals("PDF")) {
+            System.out.println("Generating PDF");
+            // complex PDF logic
+        } else if (format.equals("EXCEL")) {
+            System.out.println("Generating Excel");
+            // complex Excel logic
+        } else if (format.equals("CSV")) {
+            System.out.println("Generating CSV");
+            // complex CSV logic
+        } else if (format.equals("HTML")) {
+            System.out.println("Generating HTML");
+            // complex HTML logic
+        } else {
+            System.out.println("Unknown format");
+        }
+    }
+}
+
+// File: ReportExporterTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class ReportExporterTest {
+    @Test
+    void testPdf() {
+        ReportExporter exp = new ReportExporter();
+        assertDoesNotThrow(() -> exp.export("PDF", null));
+    }
+    @Test
+    void testUnknown() {
+        ReportExporter exp = new ReportExporter();
+        assertDoesNotThrow(() -> exp.export("TXT", null));
+    }
+}
+
+// File: NotificationService.java
+public class NotificationService {
+    public void notifyUser(String channel, String message) {
+        if (channel.equals("EMAIL")) {
+            System.out.println("Sending email: " + message);
+        } else if (channel.equals("SMS")) {
+            System.out.println("Sending SMS: " + message);
+        } else if (channel.equals("PUSH")) {
+            System.out.println("Sending push notification: " + message);
+        } else if (channel.equals("SLACK")) {
+            System.out.println("Sending Slack message: " + message);
+        } else {
+            System.out.println("Unknown channel: " + channel);
+        }
+    }
+}
+
+// File: NotificationServiceTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class NotificationServiceTest {
+    @Test
+    void testEmail() {
+        NotificationService svc = new NotificationService();
+        assertDoesNotThrow(() -> svc.notifyUser("EMAIL", "Hello"));
+    }
+    @Test
+    void testSlack() {
+        NotificationService svc = new NotificationService();
+        assertDoesNotThrow(() -> svc.notifyUser("SLACK", "Ping"));
+    }
+}
+
+// File: DiscountService.java
+public class DiscountService {
+    public double applyDiscount(String type, double price) {
+        if (type.equals("STUDENT")) {
+            return price * 0.8;
+        } else if (type.equals("SENIOR")) {
+            return price * 0.7;
+        } else if (type.equals("EMPLOYEE")) {
+            return price * 0.5;
+        }
+        return price;
+    }
+}
+
+// File: DiscountServiceTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class DiscountServiceTest {
+    @Test
+    void testStudent() {
+        DiscountService ds = new DiscountService();
+        assertEquals(80.0, ds.applyDiscount("STUDENT", 100.0));
+    }
+    @Test
+    void testNone() {
+        DiscountService ds = new DiscountService();
+        assertEquals(100.0, ds.applyDiscount("NONE", 100.0));
+    }
+}
+
+// File: TextFormatter.java
+public class TextFormatter {
+    public String format(String style, String text) {
+        if (style.equals("UPPER")) {
+            return text.toUpperCase();
+        } else if (style.equals("LOWER")) {
+            return text.toLowerCase();
+        } else if (style.equals("CAMEL")) {
+            // camel case logic
+            String[] parts = text.split(" ");
+            StringBuilder sb = new StringBuilder();
+            for (String p : parts) sb.append(p.substring(0,1).toUpperCase()).append(p.substring(1));
+            return sb.toString();
+        }
+        return text;
+    }
+}
+
+// File: TextFormatterTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class TextFormatterTest {
+    @Test
+    void testCamel() {
+        TextFormatter tf = new TextFormatter();
+        assertEquals("HelloWorld", tf.format("CAMEL", "hello world"));
+    }
+    @Test
+    void testLower() {
+        TextFormatter tf = new TextFormatter();
+        assertEquals("hi", tf.format("LOWER", "HI"));
+    }
+}
+
+// File: DataParser.java
+public class DataParser {
+    public Object parse(String type, String input) {
+        if (type.equals("JSON")) {
+            // pretend to parse JSON
+            return new com.google.gson.JsonParser().parse(input);
+        } else if (type.equals("XML")) {
+            // pretend to parse XML
+            return javax.xml.parsers.DocumentBuilderFactory.newInstance()
+                    .newDocumentBuilder().parse(new java.io.ByteArrayInputStream(input.getBytes()));
+        } else if (type.equals("CSV")) {
+            String[] rows = input.split(";");
+            List<String[]> data = new java.util.ArrayList<>();
+            for (String row : rows) data.add(row.split(","));
+            return data;
+        }
+        return null;
+    }
+}
+
+// File: DataParserTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class DataParserTest {
+    @Test
+    void testCsv() {
+        DataParser dp = new DataParser();
+        Object result = dp.parse("CSV", "A,B;C,D");
+        assertTrue(result instanceof java.util.List);
+    }
+    @Test
+    void testUnknown() {
+        DataParser dp = new DataParser();
+        assertNull(dp.parse("YAML", "a:1"));
+    }
+}
+
+// File: TaxCalculator.java
+public class TaxCalculator {
+    public double calculate(String region, double income) {
+        if (region.equals("US")) {
+            if (income < 10000) return income * 0.1;
+            else if (income < 50000) return income * 0.2;
+            else return income * 0.3;
+        } else if (region.equals("EU")) {
+            if (income < 15000) return income * 0.12;
+            else if (income < 60000) return income * 0.22;
+            else return income * 0.32;
+        }
+        return 0;
+    }
+}
+
+// File: TaxCalculatorTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class TaxCalculatorTest {
+    @Test
+    void testUsHigh() {
+        TaxCalculator tc = new TaxCalculator();
+        assertEquals(30000.0, tc.calculate("US", 100000));
+    }
+    @Test
+    void testEuLow() {
+        TaxCalculator tc = new TaxCalculator();
+        assertEquals(1800.0, tc.calculate("EU", 15000));
+    }
+}
+
+// File: PromotionEngine.java
+public class PromotionEngine {
+    public double applyPromotion(String promoCode, double price) {
+        if (promoCode.equals("SUMMER")) {
+            return price - 20;
+        } else if (promoCode.equals("WINTER")) {
+            return price * 0.85;
+        } else if (promoCode.equals("VIP")) {
+            return price * 0.9 - 10;
+        } else if (promoCode.equals("NONE")) {
+            return price;
+        }
+        return price;
+    }
+}
+
+// File: PromotionEngineTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class PromotionEngineTest {
+    @Test
+    void testWinter() {
+        PromotionEngine pe = new PromotionEngine();
+        assertEquals(85.0, pe.applyPromotion("WINTER", 100.0));
+    }
+    @Test
+    void testUnknown() {
+        PromotionEngine pe = new PromotionEngine();
+        assertEquals(100.0, pe.applyPromotion("UNKNOWN", 100.0));
+    }
+}
+
+// File: EncryptionService.java
+public class EncryptionService {
+    public String encrypt(String algorithm, String data) {
+        if (algorithm.equals("AES")) {
+            // dummy AES
+            return "AES(" + data + ")";
+        } else if (algorithm.equals("DES")) {
+            return "DES(" + data + ")";
+        } else if (algorithm.equals("RSA")) {
+            return "RSA(" + data + ")";
+        }
+        return data;
+    }
+}
+
+// File: EncryptionServiceTest.java
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class EncryptionServiceTest {
+    @Test
+    void testAes() {
+        EncryptionService es = new EncryptionService();
+        assertEquals("AES(secret)", es.encrypt("AES", "secret"));
+    }
+    @Test
+    void testNone() {
+        EncryptionService es = new EncryptionService();
+        assertEquals("data", es.encrypt("NONE", "data"));
+    }
+}
